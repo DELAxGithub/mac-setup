@@ -26,17 +26,23 @@
    ```
 3. スクリプトに実行権限を与えます（初回のみ）。
    ```bash
-   chmod +x setup.sh
+   chmod +x setup.sh cleanup_dock.sh
    ```
 4. セットアップスクリプトを実行します。
    ```bash
    ./setup.sh
+   ```
+
+   Dockを整理（初期化）したい場合は、以下のコマンドも実行してください：
+   ```bash
+   ./cleanup_dock.sh
    ```
 5. スクリプト完了後、ターミナルを再起動してください。
 
 ## 含まれるファイル
 
 - **setup.sh**: メインの実行スクリプト。
+- **cleanup_dock.sh**: Dockを初期化（アイコン一掃）するスクリプト。
 - **Brewfile**: インストールするアプリとCLIツールのリスト。
 - **requirements.txt**: Pythonパッケージのリスト。
 - **vscode-extensions.txt**: VS Code拡張機能のリスト。
