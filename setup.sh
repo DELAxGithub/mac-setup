@@ -56,7 +56,7 @@ echo "  -> Node $(mise current node) installed"
 
 # 5. Install Python packages
 echo "[5/6] Installing Python packages..."
-pip3 install -r "$SCRIPT_DIR/requirements.txt"
+pip3 install -r "$SCRIPT_DIR/requirements.txt" --break-system-packages
 
 # 6. Install VS Code extensions
 echo "[6/6] Installing VS Code extensions..."
@@ -68,6 +68,13 @@ if command -v code &>/dev/null; then
 else
     echo "  -> VS Code CLI not found. Install extensions manually after VS Code setup."
 fi
+
+# 7. Cleanup Dock (remove all persistent apps)
+echo "[7/7] Cleaning up Dock..."
+defaults write com.apple.dock persistent-apps -array
+defaults write com.apple.dock persistent-others -array
+killall Dock
+echo "  -> Dock icons cleared"
 
 echo ""
 echo "=== Setup Complete ==="
