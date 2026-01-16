@@ -14,10 +14,15 @@
 
 ## 使い方 (Installation)
 
-1. この `mac-setup` フォルダを新しいMacの任意の場所（例: `~/src/mac-setup`）に配置します。
-2. ターミナルを開き、ディレクトリに移動します。
+1. ターミナルを開き、ソースコードを管理したいディレクトリに移動します（例: `~/src`）。
    ```bash
-   cd ~/src/mac-setup
+   mkdir -p ~/src
+   cd ~/src
+   ```
+2. リポジトリをクローンします。
+   ```bash
+   git clone https://github.com/DELAxGithub/mac-setup.git
+   cd mac-setup
    ```
 3. スクリプトに実行権限を与えます（初回のみ）。
    ```bash
