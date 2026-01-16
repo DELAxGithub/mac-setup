@@ -1,0 +1,19 @@
+# Python packages - delaxstudio dev environment
+# Usage: pip install -r requirements.txt
+
+# Google AI/Cloud
+google-genai
+google-api-python-client
+google-cloud-texttospeech
+
+# HTTP clients
+httpx
+requests
+
+# Data validation
+pydantic
+
+# Utilities
+python-dotenv
+pyyaml
+tqdm
