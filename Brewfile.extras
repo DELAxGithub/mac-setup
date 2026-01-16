@@ -1,0 +1,29 @@
+# Homebrew Brewfile.extras - Add-on Pack
+# Usage: brew bundle install --file=Brewfile.extras
+
+# Utilities & Japanese Input
+cask "karabiner-elements" # Keyboard customization (modern Ei-Kana)
+cask "rectangle"          # Window management
+cask "alt-tab"            # Windows-style window switcher
+cask "google-japanese-ime"# Japanese Input Method
+cask "deepl"              # Translation
+cask "the-unarchiver"     # Archive manager
+cask "raycast"            # Spotlight replacement
+
+# Browsers
+cask "google-chrome"      # Critical backup browser
+cask "firefox"
+
+# Communication
+cask "slack"
+cask "zoom"
+cask "discord"
+
+# Video
+cask "iina"               # Modern video player
+
+# Development & Security
+cask "orbstack"           # Docker Desktop alternative
+cask "iterm2"             # Terminal alternative
+cask "1password"          # Password manager
+cask "font-hack-nerd-font" # For Starship/Terminal icons
