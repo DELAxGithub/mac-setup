@@ -23,7 +23,7 @@ cask "cmd-eikana"             # ⌘英かな (Active on Studio)
 # cask "karabiner-elements" # Keyboard customization (modern Ei-Kana) - Note: Studio uses cmd-eikana
 cask "rectangle"          # Window management
 cask "alt-tab"            # Windows-style window switcher
-cask "google-japanese-ime"# Japanese Input Method
+
 cask "deepl"              # Translation
 cask "the-unarchiver"     # Archive manager
 cask "raycast"            # Spotlight replacement

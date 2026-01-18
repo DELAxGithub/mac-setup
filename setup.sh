@@ -25,6 +25,11 @@ fi
 echo "[2/6] Installing Homebrew packages..."
 brew bundle install --file="$SCRIPT_DIR/Brewfile"
 
+if [ -f "$SCRIPT_DIR/Brewfile.extras" ]; then
+    echo "  -> Installing extra packages..."
+    brew bundle install --file="$SCRIPT_DIR/Brewfile.extras"
+fi
+
 # 3. Configure shell (.zshrc)
 echo "[3/6] Configuring shell..."
 ZSHRC="$HOME/.zshrc"
