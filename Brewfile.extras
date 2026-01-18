@@ -1,8 +1,26 @@
 # Homebrew Brewfile.extras - Add-on Pack
 # Usage: brew bundle install --file=Brewfile.extras
 
+# --- Missing from Studio (Added by Request) ---
+
+# Creative / Production
+cask "adobe-creative-cloud"
+cask "voicepeak"
+cask "aqua-voice"
+# cask "davinci-resolve-studio" # Note: Often requires manual install/download due to registration
+
+# AI Tools
+cask "chatgpt"
+cask "claude"
+
+# Utilities
+cask "daisydisk"
+cask "paste"
+cask "cmd-eikana"             # ⌘英かな (Active on Studio)
+# ----------------------------------------------
+
 # Utilities & Japanese Input
-cask "karabiner-elements" # Keyboard customization (modern Ei-Kana)
+# cask "karabiner-elements" # Keyboard customization (modern Ei-Kana) - Note: Studio uses cmd-eikana
 cask "rectangle"          # Window management
 cask "alt-tab"            # Windows-style window switcher
 cask "google-japanese-ime"# Japanese Input Method
