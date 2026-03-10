@@ -37,6 +37,11 @@ if ! grep -q "HOMEBREW_FORBIDDEN_FORMULAE" "$ZSHRC" 2>/dev/null; then
     cat >> "$ZSHRC" << 'EOF'
 
 # Added by mac-setup
+# Ensure Homebrew is loaded (fix for non-login shells like Obsidian)
+if [[ -x /opt/homebrew/bin/brew ]]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+fi
+
 export HOMEBREW_FORBIDDEN_FORMULAE="node python python3 pip npm pnpm yarn"
 
 # mise
@@ -75,11 +80,26 @@ else
 fi
 
 # 7. Cleanup Dock (remove all persistent apps)
-echo "[7/7] Cleaning up Dock..."
+echo "[7/8] Cleaning up Dock..."
 defaults write com.apple.dock persistent-apps -array
 defaults write com.apple.dock persistent-others -array
 killall Dock
 echo "  -> Dock icons cleared"
+
+# 8. Setup Claude Code settings
+echo "[8/8] Setting up Claude Code..."
+CLAUDE_DIR="$HOME/.claude"
+mkdir -p "$CLAUDE_DIR/commands"
+if [ -d "$SCRIPT_DIR/claude/commands" ]; then
+    cp "$SCRIPT_DIR/claude/commands/"*.md "$CLAUDE_DIR/commands/" 2>/dev/null
+    echo "  -> Commands copied: $(ls "$SCRIPT_DIR/claude/commands/"*.md 2>/dev/null | wc -l | tr -d ' ') files"
+fi
+if [ -f "$SCRIPT_DIR/claude/settings.json" ] && [ ! -f "$CLAUDE_DIR/settings.json" ]; then
+    cp "$SCRIPT_DIR/claude/settings.json" "$CLAUDE_DIR/settings.json"
+    echo "  -> settings.json copied"
+else
+    echo "  -> settings.json already exists (skipped)"
+fi
 
 echo ""
 echo "=== Setup Complete ==="
