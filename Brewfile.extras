@@ -12,6 +12,8 @@ cask "aqua-voice"
 # AI Tools
 cask "chatgpt"
 cask "claude"
+cask "handy"              # Local AI voice input (OSS)
+brew "ollama"             # Local LLM runtime (for Handy post processing)
 
 # Utilities
 cask "daisydisk"
