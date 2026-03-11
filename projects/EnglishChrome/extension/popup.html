@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>English Extractor</title>
+  <style>
+    body {
+      width: 320px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #0f172a;
+      color: #f8fafc;
+      text-align: center;
+    }
+
+    .header {
+      background: #1d4ed8;
+      color: white;
+      padding: 16px;
+      font-weight: 600;
+      font-size: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .content {
+      padding: 32px 16px;
+    }
+
+    .icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .desc {
+      font-size: 14px;
+      color: #94a3b8;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .btn {
+      display: inline-block;
+      background: #3b82f6;
+      color: white;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 15px;
+      transition: background 0.2s;
+    }
+
+    .btn:hover {
+      background: #2563eb;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    English Chrome App
+  </div>
+  <div class="content">
+    <div class="icon">🚀</div>
+    <div class="title">Context Extractor Active</div>
+    <div class="desc">
+      Select any English word on a video or article and press <strong style="color:white">Cmd+Shift+E</strong> to save
+      it with context.
+    </div>
+    <a href="http://localhost:3000" target="_blank" class="btn">
+      Open Learning App
+    </a>
+  </div>
+  <script src="popup.js"></script>
+</body>
+
+</html>

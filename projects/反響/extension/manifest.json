@@ -1,0 +1,20 @@
+{
+    "manifest_version": 3,
+    "name": "プラッと反響収集アシスト",
+    "version": "1.0",
+    "description": "NHKラジオ「プラッと」の反響（X, Web）収集をアシストするツール",
+    "permissions": [
+        "activeTab",
+        "scripting",
+        "clipboardWrite"
+    ],
+    "host_permissions": [
+        "*://x.com/*",
+        "*://note.com/*",
+        "*://*.hatenablog.com/*",
+        "*://ameblo.jp/*"
+    ],
+    "action": {
+        "default_popup": "popup.html"
+    }
+}

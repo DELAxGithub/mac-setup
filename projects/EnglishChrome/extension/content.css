@@ -1,0 +1,52 @@
+/* content.css */
+#english-extractor-sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 300px;
+    height: 100vh;
+    background: white;
+    z-index: 999999;
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+#english-extractor-sidebar .header {
+    background: #2563eb;
+    color: white;
+    padding: 16px;
+    font-weight: bold;
+}
+
+#english-extractor-sidebar .content {
+    padding: 16px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* YouTubeの動画上の字幕ファイルをハイライト可能にする設定 */
+.ytp-caption-window-bottom {
+    /* 動画プレイヤーのクリックを妨げない範囲で字幕コンテナを操作可能にする */
+    pointer-events: auto !important;
+}
+
+.caption-window {
+    pointer-events: auto !important;
+    user-select: text !important;
+    -webkit-user-select: text !important;
+}
+
+.ytp-caption-segment {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    cursor: text !important;
+    pointer-events: auto !important;
+}
+
+/* ホバー時に少し背景色をつけて選択可能であることを示す */
+.ytp-caption-segment:hover {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    border-radius: 2px;
+}

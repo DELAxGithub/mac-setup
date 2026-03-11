@@ -1,0 +1,11 @@
+{
+    "id": "obsidian-instagram-post-preparer",
+    "name": "Instagram Post Preparer",
+    "version": "1.0.0",
+    "minAppVersion": "0.15.0",
+    "description": "Extract images and text from note and prepare them for an Instagram post",
+    "author": "delaxpro",
+    "authorUrl": "",
+    "fundingUrl": "",
+    "isDesktopOnly": true
+}

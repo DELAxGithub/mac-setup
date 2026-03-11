@@ -1,0 +1,48 @@
+{
+    "manifest_version": 3,
+    "name": "English Chrome App - Context Extractor",
+    "version": "1.0.0",
+    "description": "Extracts context and translates subtitles from YouTube/Netflix for English learning.",
+    "permissions": [
+        "activeTab",
+        "scripting",
+        "storage",
+        "contextMenus"
+    ],
+    "host_permissions": [
+        "*://*.youtube.com/*",
+        "*://*.netflix.com/*",
+        "https://translation.googleapis.com/*",
+        "http://localhost:3000/*",
+        "http://127.0.0.1:3000/*"
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "*://*.youtube.com/*",
+                "*://*.netflix.com/*"
+            ],
+            "js": [
+                "content.js"
+            ],
+            "css": [
+                "content.css"
+            ]
+        }
+    ],
+    "action": {
+        "default_popup": "popup.html"
+    },
+    "commands": {
+        "extract-shortcut": {
+            "suggested_key": {
+                "default": "Ctrl+Shift+E",
+                "mac": "Command+Shift+E"
+            },
+            "description": "Extract selected English text to SRS."
+        }
+    }
+}

@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DELAX 予算ダッシュボード</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #f5f5f7;
+      --surface:  #ffffff;
+      --border:   #e5e5ea;
+      --text:     #1d1d1f;
+      --muted:    #6e6e73;
+      --blue:     #0071e3;
+      --actual:   #0000FF;
+      --green:    #30d158;
+      --red:      #ff453a;
+      --orange:   #ff9f0a;
+      --radius:   12px;
+    }
+
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+           background: var(--bg); color: var(--text); min-height: 100vh; font-size: 13px; }
+
+    /* ---- ヘッダー ---- */
+    header {
+      background: #1d1d1f; color: #fff; padding: 0 24px; height: 52px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+    }
+    header .title { font-size: 16px; font-weight: 600; }
+    header .actions { display: flex; align-items: center; gap: 10px; }
+
+    /* ---- ボタン ---- */
+    .btn { padding: 7px 16px; border: none; border-radius: 8px; font-size: 13px;
+           font-weight: 500; cursor: pointer; transition: opacity 0.15s; }
+    .btn:hover { opacity: 0.85; }
+    .btn-primary { background: var(--blue); color: #fff; }
+    .btn-ghost   { background: rgba(255,255,255,0.12); color: #fff; }
+    .btn-secondary { background: var(--border); color: var(--text); }
+
+    /* ---- メインレイアウト ---- */
+    main { max-width: 1400px; margin: 0 auto; padding: 20px 16px 64px; }
+
+    /* ---- ローダー ---- */
+    #loader { display: none; align-items: center; justify-content: center;
+              padding: 80px; gap: 12px; color: var(--muted); }
+    .spinner { width: 24px; height: 24px; border: 2px solid var(--border);
+               border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ---- エラー ---- */
+    #error-banner { display: none; background: #fff2f0; border: 1px solid #ffccc7;
+                    border-radius: var(--radius); padding: 14px 18px; color: #cf1322;
+                    font-size: 14px; margin-bottom: 16px; }
+
+    /* ---- 結果バナー ---- */
+    .result-banner { border-radius: var(--radius); padding: 14px 18px; font-size: 14px;
+                     margin-bottom: 16px; line-height: 1.6; }
+    .result-banner.success { background: #f0fff4; border: 1px solid #b7eb8f; color: #135200; }
+    .result-banner.warning { background: #fffbe6; border: 1px solid #ffe58f; color: #614700; }
+    .result-banner .detail { font-size: 12px; color: var(--muted); margin-top: 6px; }
+    .result-banner ul { margin: 6px 0 0 16px; font-size: 12px; }
+
+    /* ---- 節税サマリー（コンパクト版） ---- */
+    .tax-summary {
+      background: var(--surface); border-radius: var(--radius); padding: 16px 20px;
+      margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 20px;
+      align-items: center; border-left: 4px solid var(--green);
+    }
+    .tax-summary .ts-item { text-align: center; }
+    .tax-summary .ts-label { font-size: 10px; color: var(--muted); font-weight: 600;
+                              text-transform: uppercase; letter-spacing: 0.3px; }
+    .tax-summary .ts-value { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums;
+                              margin-top: 2px; }
+    .tax-summary .ts-sub   { font-size: 10px; color: var(--muted); margin-top: 1px; }
+    .tax-summary .ts-sep   { width: 1px; height: 36px; background: var(--border); }
+
+    /* ============================================================ */
+    /* グリッドテーブル（メインダッシュボード）                        */
+    /* ============================================================ */
+    .grid-wrap {
+      background: var(--surface); border-radius: var(--radius);
+      margin-bottom: 20px; overflow: hidden;
+    }
+    .grid-scroll { overflow-x: auto; }
+
+    .grid-table {
+      border-collapse: collapse; width: max-content; min-width: 100%;
+      font-size: 12px; font-variant-numeric: tabular-nums;
+    }
+
+    /* ヘッダー */
+    .grid-table thead th {
+      padding: 6px 10px; background: #f2f2f7; font-size: 10px; font-weight: 700;
+      color: var(--muted); text-align: center; position: sticky; top: 0; z-index: 2;
+      white-space: nowrap; border-bottom: 2px solid var(--border);
+    }
+    .grid-table thead th.col-label { text-align: left; min-width: 160px; }
+    .grid-table thead th.col-sublabel { text-align: left; min-width: 200px; }
+    .grid-table thead th.col-month { min-width: 90px; }
+    .grid-table thead th.col-annual {
+      min-width: 100px; background: #e8e8ed; font-weight: 800;
+      position: sticky; right: 0; z-index: 3;
+    }
+
+    /* セル */
+    .grid-table td {
+      padding: 4px 10px; text-align: right; white-space: nowrap;
+      border-bottom: 1px solid #f2f2f7;
+    }
+    .grid-table td.cell-label {
+      text-align: left; font-weight: 500; color: var(--text);
+      position: sticky; left: 0; background: #fff; z-index: 1;
+      max-width: 160px; overflow: hidden; text-overflow: ellipsis;
+    }
+    .grid-table td.cell-sublabel {
+      text-align: left; color: var(--text); padding-left: 16px;
+    }
+    .grid-table td.cell-annual {
+      font-weight: 700; background: #fafafa;
+      position: sticky; right: 0; z-index: 1;
+      border-left: 2px solid var(--border);
+    }
+
+    /* 値の色分け */
+    .v-budget  { color: #888; }
+    .v-actual  { color: var(--actual); }
+    .v-neg     { color: var(--red); }
+    .v-zero    { color: #ccc; }
+
+    /* セクションヘッダー */
+    .grid-table tr.section-header td {
+      background: #f7f7fa; font-weight: 700; font-size: 11px; color: var(--text);
+      padding: 8px 10px; border-bottom: 1px solid var(--border);
+      position: relative;
+    }
+    .grid-table tr.section-header td.cell-annual { background: #eeeeef; }
+
+    /* サマリー行 */
+    .grid-table tr.row-summary td {
+      font-weight: 700; background: #fffde7; border-top: 2px solid #e0d97a;
+      border-bottom: 2px solid #e0d97a;
+    }
+    .grid-table tr.row-summary td.cell-annual { background: #fff9c4; }
+
+    .grid-table tr.row-profit td {
+      font-weight: 800; background: #e8f5e9; font-size: 13px;
+      border-top: 2px solid #66bb6a; border-bottom: 2px solid #66bb6a;
+    }
+    .grid-table tr.row-profit td.cell-annual { background: #c8e6c9; }
+
+    .grid-table tr.row-gross td {
+      font-weight: 700; background: #e3f2fd;
+      border-top: 1px solid #90caf9; border-bottom: 1px solid #90caf9;
+    }
+    .grid-table tr.row-gross td.cell-annual { background: #bbdefb; }
+
+    .grid-table tr.row-cash td {
+      font-weight: 600; background: #fce4ec; font-size: 11px;
+      border-top: 1px solid #ef9a9a;
+    }
+    .grid-table tr.row-cash td.cell-annual { background: #f8bbd0; }
+
+    /* 空行 */
+    .grid-table tr.row-spacer td { padding: 2px; border: none; }
+
+    /* ---- 月別計画 ---- */
+    .plan-wrap { background: var(--surface); border-radius: var(--radius);
+                 padding: 20px 24px; margin-bottom: 20px; }
+    .plan-wrap h3 { font-size: 14px; font-weight: 600; margin-bottom: 14px; }
+    .plan-month-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                       gap: 8px; margin-bottom: 16px; }
+    .plan-month-card { background: #f9f9fb; border-radius: 8px; padding: 10px 12px;
+                       text-align: center; border: 1px solid var(--border); }
+    .plan-month-card.past { opacity: 0.5; }
+    .plan-month-card .pm-label { font-size: 11px; color: var(--muted); font-weight: 600; }
+    .plan-month-card .pm-dash  { font-size: 13px; color: var(--text); margin-top: 2px; }
+    .plan-month-card .pm-plan  { font-size: 13px; color: var(--blue); font-weight: 600; margin-top: 2px; }
+    .plan-month-card .pm-plan:empty { display: none; }
+    .plan-items { margin-bottom: 16px; }
+    .plan-item-row { display: flex; align-items: center; gap: 10px; padding: 8px 0;
+                     border-bottom: 1px solid #f2f2f7; font-size: 13px; }
+    .plan-item-row .pi-month { width: 70px; color: var(--muted); font-weight: 500; }
+    .plan-item-row .pi-name  { flex: 1; }
+    .plan-item-row .pi-amount { font-weight: 600; font-variant-numeric: tabular-nums; }
+    .plan-item-row .pi-memo  { color: var(--muted); font-size: 11px; max-width: 150px;
+                                overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .plan-item-row .pi-del   { background: none; border: none; color: var(--red);
+                                cursor: pointer; font-size: 16px; padding: 2px 6px; }
+    .plan-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
+    .plan-form label { font-size: 11px; color: var(--muted); font-weight: 600;
+                       display: block; margin-bottom: 3px; }
+    .plan-form input, .plan-form select {
+      padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px;
+      font-size: 13px; background: #fff; color: var(--text);
+    }
+    .plan-form input[name=amount] { width: 100px; }
+    .plan-form input[name=item]   { width: 140px; }
+    .plan-form input[name=memo]   { width: 140px; }
+    .plan-room-banner { display: flex; justify-content: space-between; align-items: center;
+                        padding: 10px 14px; border-radius: 8px; margin-bottom: 12px;
+                        font-size: 13px; font-weight: 600; }
+
+    /* ---- CSVモーダル ---- */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+                     z-index: 200; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--surface); border-radius: 16px; padding: 28px;
+             width: min(480px, calc(100vw - 32px)); box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    .modal h2 { font-size: 18px; margin-bottom: 6px; }
+    .modal p  { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+    .drop-zone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 32px;
+                 text-align: center; cursor: pointer; margin-bottom: 16px;
+                 transition: border-color 0.2s, background 0.2s; }
+    .drop-zone.dragover { border-color: var(--blue); background: #f0f7ff; }
+    .drop-zone .icon { font-size: 36px; margin-bottom: 8px; }
+    .drop-zone p { font-size: 14px; color: var(--muted); margin-bottom: 12px; }
+    input[type=file] { display: none; }
+    input[type=month] { width: 100%; padding: 9px 12px; border: 1px solid var(--border);
+                        border-radius: 8px; font-size: 14px; margin-bottom: 12px; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .modal-progress { display: none; text-align: center; padding: 16px; color: var(--muted); font-size: 14px; }
+    .modal-progress .spinner { margin: 0 auto 8px; }
+
+    select { padding: 7px 12px; border: 1px solid #555; border-radius: 8px;
+             background: #2c2c2e; color: #fff; font-size: 13px; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="title">DELAX 予算ダッシュボード</span>
+  <div class="actions">
+    <button class="btn btn-primary" onclick="openModal()">+ CSV 取り込み</button>
+  </div>
+</header>
+
+<main>
+  <div id="error-banner"></div>
+  <div id="dash-result"></div>
+  <div id="tax-summary"></div>
+  <div id="grid-container"></div>
+  <div id="monthly-plan"></div>
+  <div id="loader"><div class="spinner"></div><span>読み込み中...</span></div>
+</main>
+
+<!-- CSVモーダル -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h2>CSV 取り込み</h2>
+    <p>マネーフォワード 仕訳帳 CSV をドロップしてください。<br>Shift-JIS は自動変換されます。</p>
+    <div class="drop-zone" id="drop-zone">
+      <div class="icon">&#x1F4C4;</div>
+      <p>ここにドロップ、または</p>
+      <label class="btn btn-primary" for="file-input" style="font-size:13px">ファイルを選択</label>
+      <input type="file" id="file-input" accept=".csv" />
+    </div>
+    <input type="month" id="month-input" title="対象年月（CSVから自動検出します）" placeholder="年月（自動検出）" />
+    <div class="modal-progress" id="modal-progress">
+      <div class="spinner"></div>
+      <div>取り込み中...</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  // 仮データ（PDFダッシュボードから抜粋）
+  // getFullDashboard() 実装後にAPI呼び出しに差し替え
+  // ============================================================
+  const DUMMY_DATA = {
+    headers: ['9月','10月','11月','12月','1月','2月','3月','4月','5月','6月','7月','8月','9月(翌)'],
+    sections: [
+      {
+        title: '売上',
+        rows: [
+          { a:'NHKエンタープライズ', b:'プラっと2024・25', v:[1100000,1100000,1100000,1100000,1210000,1100000,1100000,1100000,1100000,1100000,1100000,1100000,1100000], annual:14310000, isActual:[1,1,1,1,1,1,0,0,0,0,0,0,0] },
+          { a:'NHKエンタープライズ', b:'GLOCOM2025', v:[0,0,0,0,0,0,0,0,0,0,0,0,0], annual:0, isActual:[], note:'8,250,000 (1月)' },
+          { a:'NHKエンタープライズ', b:'リベラリー 2025 VTR', v:[0,0,0,0,0,3960000,0,0,0,0,0,0,0], annual:7920000, isActual:[0,0,0,0,0,1,0,0,0,0,0,0,0] },
+          { a:'ジェノム', b:'NHK俳句', v:[2332000,2387000,2387000,2387000,2387000,0,0,0,0,0,0,0,0], annual:11880000, isActual:[1,1,1,1,1,0,0,0,0,0,0,0,0] },
+          { a:'よっしー', b:'', v:[128700,57200,99000,55000,55000,0,0,0,0,0,0,0,0], annual:394900, isActual:[1,1,1,1,1,0,0,0,0,0,0,0,0] },
+        ],
+        summaryRow: { label:'売り上げ（税込）', v:[4532000,5084200,3487000,11836000,12892000,2035000,1100000,5060000,1100000,1100000,1100000,1100000,1100000], annual:46994200 },
+      },
+      {
+        title: '外注',
+        rows: [
+          { a:'HIGH PAIR', b:'プラっと25年度 8.8万', v:[88000,88000,88000,88000,88000,88000,88000,88000,88000,88000,88000,88000,88000], annual:1056000, isActual:[1,1,1,1,1,1,0,0,0,0,0,0,0] },
+          { a:'HIGH PAIR', b:'リベラリー2025 VTR', v:[0,0,0,440000,0,0,0,440000,0,0,0,0,0], annual:880000, isActual:[0,0,0,1,0,0,0,0,0,0,0,0,0] },
+          { a:'KIN', b:'プラっと', v:[88000,88000,88000,88000,0,0,0,44000,44000,44000,44000,44000,44000], annual:528000, isActual:[1,1,1,1,0,0,0,0,0,0,0,0,0] },
+          { a:'克幸', b:'プラっと1本3万', v:[450000,66000,66000,66000,66000,66000,0,0,0,0,0,0,0], annual:330000, isActual:[1,1,1,1,1,1,0,0,0,0,0,0,0] },
+          { a:'ジェノム', b:'NHK俳句 要員費', v:[10350000,0,0,6460000,0,0,5500000,0,0,0,0,0,0], annual:11960000, isActual:[1,0,0,1,0,0,0,0,0,0,0,0,0] },
+        ],
+        summaryRow: { label:'経費 外注（税込）', v:[16291648,180665,176000,7076000,88000,360800,6028000,132000,198000,198000,198000,198000,198000], annual:15031465 },
+      },
+      {
+        title: '人件費',
+        rows: [
+          { a:'法定福利費', b:'北國銀行', v:[232540,232540,232540,232540,0,0,0,0,0,0,0,0,0], annual:697620, isActual:[1,1,1,1,0,0,0,0,0,0,0,0,0] },
+          { a:'DELAX人件費', b:'DELA', v:[257148,257148,665892,575612,575612,800000,800000,800000,800000,800000,800000,800000,800000], annual:8474264, isActual:[1,1,1,1,1,1,0,0,0,0,0,0,0] },
+          { a:'DELAX人件費', b:'ヨッシー', v:[296288,296288,631674,696414,696414,750000,750000,750000,750000,750000,750000,750000,750000], annual:8320790, isActual:[1,1,1,1,1,1,0,0,0,0,0,0,0] },
+        ],
+        summaryRow: { label:'プロジェクト外注＋人件費', v:[17077624,966641,1706106,8580566,1360026,1910800,7578000,1682000,1748000,1748000,1748000,1748000,1748000], annual:32524139 },
+      },
+      {
+        title: '経費',
+        rows: [
+          { a:'', b:'宿泊費', v:[144456,156687,33344,27360,50000,150000,150000,150000,150000,150000,150000,150000,150000], annual:1467391, isActual:[1,1,1,1,0,0,0,0,0,0,0,0,0] },
+          { a:'', b:'航空券', v:[163525,376834,293570,39210,200000,0,100000,100000,100000,100000,100000,100000,100000], annual:1609614, isActual:[1,1,1,1,0,0,0,0,0,0,0,0,0] },
+          { a:'', b:'電車代', v:[7508,14658,14191,14900,20000,5000,5000,5000,5000,5000,5000,5000,5000], annual:103749, isActual:[1,1,1,1,0,0,0,0,0,0,0,0,0] },
+          { a:'', b:'携帯料金', v:[6602,9512,3072,4800,7000,7000,7000,7000,7000,7000,7000,7000,7000], annual:80384, isActual:[1,1,1,1,0,0,0,0,0,0,0,0,0] },
+          { a:'', b:'SaaS系サービス', v:[86194,74652,23091,100624,30000,30000,30000,30000,30000,30000,30000,30000,30000], annual:468367, isActual:[1,1,1,1,0,0,0,0,0,0,0,0,0] },
+          { a:'', b:'Google', v:[4617,7460,2331,1334,5000,5000,5000,5000,5000,5000,5000,5000,5000], annual:56125, isActual:[1,1,1,1,0,0,0,0,0,0,0,0,0] },
+          { a:'', b:'動画配信サービス', v:[13294,6538,6538,6538,13294,13294,13294,13294,13294,13294,13294,13294,13294], annual:139260, isActual:[1,1,1,1,0,0,0,0,0,0,0,0,0] },
+          { a:'', b:'書籍・資料', v:[3056,2465,12090,5653,10000,10000,10000,10000,10000,10000,10000,10000,10000], annual:110208, isActual:[1,1,1,1,0,0,0,0,0,0,0,0,0] },
+          { a:'', b:'新聞・雑誌（web含む）', v:[23254,7765,7278,3302,25000,25000,25000,25000,25000,25000,25000,25000,25000], annual:243345, isActual:[1,1,1,1,0,0,0,0,0,0,0,0,0] },
+          { a:'', b:'映画・演劇・イベント等', v:[89917,4253,6600,0,0,0,0,0,0,0,0,0,0], annual:100770, isActual:[1,1,1,0,0,0,0,0,0,0,0,0,0] },
+          { a:'', b:'会議費', v:[12225,82633,66605,76436,50000,50000,50000,50000,50000,50000,50000,50000,50000], annual:675674, isActual:[1,1,1,1,0,0,0,0,0,0,0,0,0] },
+          { a:'', b:'水道・光熱費', v:[0,15000,12759,10216,0,15000,15000,15000,15000,15000,15000,15000,0], annual:142975, isActual:[0,1,1,1,0,0,0,0,0,0,0,0,0] },
+          { a:'', b:'備品・消耗品', v:[0,128110,180618,159407,0,100000,100000,100000,100000,100000,100000,100000,0], annual:1268135, isActual:[0,1,1,1,0,0,0,0,0,0,0,0,0] },
+          { a:'', b:'租税公課', v:[2205600,0,0,0,0,0,0,0,0,0,0,0,0], annual:2205600, isActual:[1,0,0,0,0,0,0,0,0,0,0,0,0] },
+          { a:'', b:'減価償却費', v:[0,808218,0,0,500000,0,500000,0,0,0,700000,0,0], annual:1700000, isActual:[0,1,0,0,0,0,0,0,0,0,0,0,0] },
+          { a:'', b:'支払手数料', v:[7295,9194,1665,3620,0,0,0,0,0,0,0,0,0], annual:14479, isActual:[1,1,1,1,0,0,0,0,0,0,0,0,0] },
+          { a:'', b:'税理士', v:[0,0,0,0,0,730891,0,0,0,0,0,0,0], annual:730891, isActual:[0,0,0,0,0,1,0,0,0,0,0,0,0] },
+          { a:'', b:'スペイン家賃', v:[0,0,0,0,0,0,200000,200000,200000,200000,200000,200000,200000], annual:1400000, isActual:[0,0,0,0,0,0,0,0,0,0,0,0,0] },
+          { a:'', b:'金沢事務所費', v:[0,600000,0,0,0,0,0,0,0,0,0,0,0], annual:600000, isActual:[0,1,0,0,0,0,0,0,0,0,0,0,0] },
+        ],
+        summaryRow: { label:'経費合計', v:[4107417,979184,700161,466184,920294,1651185,745294,1445294,745294,745294,745294,745294,1345294], annual:11234066 },
+      },
+    ],
+    profitRow: { label:'利益', v:[-16653041,3138375,1080733,2789250,10611680,-1526985,-7223294,1932706,-1393294,-1393294,-1393294,-1393294,-1993294], annual:3235995 },
+    grossMarginRow: { label:'売上ー外注ー人件費', v:[-12545624,4117559,1780894,3255434,11531974,124200,-6478000,3378000,-648000,-648000,-648000,-648000,-648000], annual:14470061 },
+    cashRow: { label:'SBI法人口座の予測値', v:[-2777577,10871385,5419582,5805799,13238837,10830024,3606730,5539436,4146142,2752848,1359554,-33740,-2027034], annual:null },
+    taxOpt: {
+      currentProfit: 3235995,
+      targetProfit: 1000000,
+      expenseRoom: 2235995,
+      taxAtCurrent: 485399,
+      taxAtTarget: 150000,
+      taxSavings: 335399,
+      monthsLeft: 7,
+      monthlyAllowance: 319428,
+      revenue: 46994200,
+    },
+  };
+
+  // ============================================================
+  // 初期化
+  // ============================================================
+  document.addEventListener('DOMContentLoaded', () => {
+    renderTaxSummary(DUMMY_DATA.taxOpt);
+    renderGrid(DUMMY_DATA);
+    // ライブデータ取得（バックグラウンド）
+    loadDisposable();
+    loadMonthlyPlan();
+  });
+
+  // ============================================================
+  // 節税サマリー（コンパクト版）
+  // ============================================================
+  function loadDisposable() {
+    google.script.run
+      .withSuccessHandler(d => { if (d && !d.error) renderTaxSummary(d); })
+      .withFailureHandler(() => {})
+      .getDisposableSummary();
+  }
+
+  function renderTaxSummary(d) {
+    const el = document.getElementById('tax-summary');
+    const roomColor = d.expenseRoom > 0 ? 'var(--green)' : 'var(--red)';
+    el.innerHTML = `
+      <div class="tax-summary" style="border-left-color:${roomColor}">
+        <div class="ts-item">
+          <div class="ts-label">着地利益</div>
+          <div class="ts-value">&yen;${fmt(d.currentProfit || d.targetProfit)}</div>
+        </div>
+        <div class="ts-sep"></div>
+        <div class="ts-item">
+          <div class="ts-label">目標利益</div>
+          <div class="ts-value" style="color:var(--blue)">&yen;${fmt(d.targetProfit)}</div>
+        </div>
+        <div class="ts-sep"></div>
+        <div class="ts-item">
+          <div class="ts-label">経費余力</div>
+          <div class="ts-value" style="color:${roomColor}">&yen;${fmt(d.expenseRoom)}</div>
+          <div class="ts-sub">残り${d.monthsLeft}ヶ月 &rarr; 月 &yen;${fmt(d.monthlyAllowance)}</div>
+        </div>
+        <div class="ts-sep"></div>
+        <div class="ts-item">
+          <div class="ts-label">法人税(現状)</div>
+          <div class="ts-value" style="font-size:16px">&yen;${fmt(d.taxAtCurrent)}</div>
+        </div>
+        <div class="ts-item">
+          <div class="ts-label">法人税(目標)</div>
+          <div class="ts-value" style="font-size:16px;color:var(--green)">&yen;${fmt(d.taxAtTarget)}</div>
+          <div class="ts-sub">節税 &yen;${fmt(d.taxSavings)}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ============================================================
+  // グリッドテーブル描画
+  // ============================================================
+  function renderGrid(data) {
+    const el = document.getElementById('grid-container');
+    const hdr = data.headers;
+
+    let html = '<div class="grid-wrap"><div class="grid-scroll"><table class="grid-table">';
+
+    // ヘッダー行
+    html += '<thead><tr>';
+    html += '<th class="col-label">カテゴリ</th>';
+    html += '<th class="col-sublabel">項目</th>';
+    hdr.forEach(h => html += `<th class="col-month">${h}</th>`);
+    html += '<th class="col-annual">年度合計</th>';
+    html += '</tr></thead><tbody>';
+
+    // セクションごと
+    for (const sec of data.sections) {
+      // セクションヘッダー
+      html += `<tr class="section-header"><td colspan="2">${sec.title}</td>`;
+      for (let i = 0; i < hdr.length; i++) html += '<td></td>';
+      html += '<td class="cell-annual"></td></tr>';
+
+      // 明細行
+      for (const row of sec.rows) {
+        html += '<tr>';
+        html += `<td class="cell-label">${row.a}</td>`;
+        html += `<td class="cell-sublabel">${row.b}</td>`;
+        for (let i = 0; i < 13; i++) {
+          const val = row.v[i] || 0;
+          const isAct = row.isActual && row.isActual[i];
+          html += `<td class="${valClass(val, isAct)}">${fmtVal(val)}</td>`;
+        }
+        html += `<td class="cell-annual ${valClass(row.annual)}">${fmtVal(row.annual)}</td>`;
+        html += '</tr>';
+      }
+
+      // サマリー行
+      if (sec.summaryRow) {
+        const sr = sec.summaryRow;
+        html += '<tr class="row-summary">';
+        html += `<td class="cell-label" colspan="2">${sr.label}</td>`;
+        for (let i = 0; i < 13; i++) {
+          html += `<td>${fmtVal(sr.v[i])}</td>`;
+        }
+        html += `<td class="cell-annual">${fmtVal(sr.annual)}</td>`;
+        html += '</tr>';
+      }
+
+      html += '<tr class="row-spacer"><td colspan="16"></td></tr>';
+    }
+
+    // 売上ー外注ー人件費
+    const gm = data.grossMarginRow;
+    html += '<tr class="row-gross">';
+    html += `<td class="cell-label" colspan="2">${gm.label}</td>`;
+    for (let i = 0; i < 13; i++) html += `<td>${fmtVal(gm.v[i])}</td>`;
+    html += `<td class="cell-annual">${fmtVal(gm.annual)}</td>`;
+    html += '</tr>';
+
+    // 利益
+    const pr = data.profitRow;
+    html += '<tr class="row-profit">';
+    html += `<td class="cell-label" colspan="2">${pr.label}</td>`;
+    for (let i = 0; i < 13; i++) html += `<td>${fmtVal(pr.v[i])}</td>`;
+    html += `<td class="cell-annual">${fmtVal(pr.annual)}</td>`;
+    html += '</tr>';
+
+    // SBI口座予測値
+    if (data.cashRow) {
+      const cr = data.cashRow;
+      html += '<tr class="row-spacer"><td colspan="16"></td></tr>';
+      html += '<tr class="row-cash">';
+      html += `<td class="cell-label" colspan="2">${cr.label}</td>`;
+      for (let i = 0; i < 13; i++) html += `<td>${fmtVal(cr.v[i])}</td>`;
+      html += `<td class="cell-annual">${cr.annual != null ? fmtVal(cr.annual) : ''}</td>`;
+      html += '</tr>';
+    }
+
+    html += '</tbody></table></div></div>';
+    el.innerHTML = html;
+  }
+
+  // 値のフォーマット（会計表記: 負は (1,234) ）
+  function fmtVal(n) {
+    if (n == null || n === '') return '';
+    n = Number(n);
+    if (n === 0) return '<span class="v-zero">-</span>';
+    if (n < 0) return `<span class="v-neg">(${Math.abs(n).toLocaleString('ja-JP')})</span>`;
+    return n.toLocaleString('ja-JP');
+  }
+
+  // 値のCSSクラス
+  function valClass(n, isActual) {
+    if (n == null) return '';
+    n = Number(n);
+    if (n === 0) return '';
+    if (n < 0) return 'v-neg';
+    if (isActual) return 'v-actual';
+    return 'v-budget';
+  }
+
+  // ============================================================
+  // CSVモーダル
+  // ============================================================
+  function openModal()  { document.getElementById('modal').classList.add('open'); }
+  function closeModal() { document.getElementById('modal').classList.remove('open'); resetModal(); }
+  function resetModal() {
+    document.getElementById('file-input').value = '';
+    document.getElementById('modal-progress').style.display = 'none';
+    document.querySelector('.drop-zone').style.display = 'block';
+    document.querySelector('.modal-actions').style.display = 'flex';
+  }
+
+  const dropZone  = document.getElementById('drop-zone');
+  const fileInput = document.getElementById('file-input');
+  dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault(); dropZone.classList.remove('dragover');
+    handleFile(e.dataTransfer.files[0]);
+  });
+  dropZone.addEventListener('click', e => { if (e.target !== fileInput) fileInput.click(); });
+  fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+
+  function handleFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const csv = new TextDecoder('shift-jis').decode(new Uint8Array(ev.target.result));
+        startImport(csv);
+      } catch(e) { showError(e); }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function startImport(csv) {
+    document.querySelector('.drop-zone').style.display = 'none';
+    document.querySelector('.modal-actions').style.display = 'none';
+    document.getElementById('modal-progress').style.display = 'block';
+    const monthVal = document.getElementById('month-input').value || null;
+    google.script.run
+      .withSuccessHandler(data => {
+        closeModal();
+        loadDisposable();
+        loadMonthlyPlan();
+        // TODO: loadFullDashboard() でグリッド更新
+        if (data && data.dashboardResult) showDashResult(data.dashboardResult);
+      })
+      .withFailureHandler(err => { resetModal(); showError(err); })
+      .importCSV(csv, monthVal);
+  }
+
+  // ============================================================
+  // 月別経費計画
+  // ============================================================
+  function loadMonthlyPlan() {
+    google.script.run
+      .withSuccessHandler(renderMonthlyPlan)
+      .withFailureHandler(() => {})
+      .getMonthlyPlan();
+  }
+
+  function renderMonthlyPlan(d) {
+    if (!d || d.error) return;
+    const el = document.getElementById('monthly-plan');
+    const now = new Date();
+    const curYM = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    const roomColor = d.expenseRoom > 0 ? 'var(--green)' : 'var(--red)';
+    const roomBg = d.expenseRoom > 0 ? '#f0fff4' : '#fff2f0';
+
+    const monthCards = d.months.map(m => {
+      const past = m.month < curYM;
+      return `<div class="plan-month-card ${past ? 'past' : ''}">
+        <div class="pm-label">${fmtMonth(m.month)}</div>
+        <div class="pm-dash">&yen;${fmt(m.dashExpense)}</div>
+        ${m.planExpense > 0 ? `<div class="pm-plan">+&yen;${fmt(m.planExpense)}</div>` : '<div class="pm-plan"></div>'}
+      </div>`;
+    }).join('');
+
+    const planRows = d.plans.length > 0
+      ? d.plans.map(p => `<div class="plan-item-row">
+          <span class="pi-month">${fmtMonth(p.yearMonth)}</span>
+          <span class="pi-name">${p.item}</span>
+          <span class="pi-amount">&yen;${fmt(p.amount)}</span>
+          <span class="pi-memo">${p.memo}</span>
+          <button class="pi-del" onclick="deletePlan(${p.row})" title="削除">&times;</button>
+        </div>`).join('')
+      : '<div style="color:var(--muted);font-size:13px;padding:8px 0">まだ計画がありません</div>';
+
+    const futureMonths = d.months.filter(m => m.month >= curYM)
+      .map(m => `<option value="${m.month}">${fmtMonth(m.month)}</option>`).join('');
+
+    el.innerHTML = `<div class="plan-wrap">
+      <h3>月別経費計画（${d.fyLabel}）</h3>
+      <div class="plan-room-banner" style="background:${roomBg}">
+        <span>計画後の経費余力</span>
+        <span style="color:${roomColor};font-size:18px">&yen;${fmt(d.expenseRoom)}</span>
+      </div>
+      <div class="plan-month-grid">${monthCards}</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:12px">
+        上段=ダッシュボード経費 / <span style="color:var(--blue)">下段=追加計画</span>
+        ${d.totalPlanned > 0 ? ` / 計画合計 &yen;${fmt(d.totalPlanned)}` : ''}
+      </div>
+      <div class="plan-items">${planRows}</div>
+      <div class="plan-form" id="plan-form">
+        <div><label>月</label><select name="month">${futureMonths}</select></div>
+        <div><label>項目</label><input name="item" placeholder="旅行、機材 等" /></div>
+        <div><label>金額</label><input name="amount" type="number" placeholder="300000" /></div>
+        <div><label>メモ</label><input name="memo" placeholder="任意" /></div>
+        <div><label>&nbsp;</label><button class="btn btn-primary" onclick="addPlan()">追加</button></div>
+      </div>
+    </div>`;
+  }
+
+  function addPlan() {
+    const form = document.getElementById('plan-form');
+    const month = form.querySelector('[name=month]').value;
+    const item = form.querySelector('[name=item]').value.trim();
+    const amount = parseInt(form.querySelector('[name=amount]').value, 10);
+    const memo = form.querySelector('[name=memo]').value.trim();
+    if (!month || !item || !amount || amount <= 0) { alert('月・項目・金額を入力してください'); return; }
+    google.script.run
+      .withSuccessHandler(data => { renderMonthlyPlan(data); loadDisposable(); })
+      .withFailureHandler(showError)
+      .addPlanItem(month, item, amount, memo);
+  }
+
+  function deletePlan(rowNum) {
+    google.script.run
+      .withSuccessHandler(data => { renderMonthlyPlan(data); loadDisposable(); })
+      .withFailureHandler(showError)
+      .deletePlanItem(rowNum);
+  }
+
+  // ============================================================
+  // ユーティリティ
+  // ============================================================
+  function showError(err) {
+    const banner = document.getElementById('error-banner');
+    banner.style.display = 'block';
+    banner.textContent = 'エラー: ' + (err.message || err);
+    setTimeout(() => banner.style.display = 'none', 6000);
+  }
+
+  function showDashResult(result) {
+    const el = document.getElementById('dash-result');
+    if (!result) { el.innerHTML = ''; return; }
+    const hasWarning = (result.unmapped && result.unmapped.length > 0) || (result.notFound && result.notFound.length > 0);
+    const cls = hasWarning ? 'warning' : 'success';
+    let html = `<div class="result-banner ${cls}"><strong>${result.message || 'ダッシュボード反映完了'}</strong>`;
+    if (result.written && result.written.length > 0) html += `<div class="detail">${result.written.length} 項目を書き込みました</div>`;
+    if (result.unmapped && result.unmapped.length > 0) {
+      html += '<div class="detail">マッピング未定義:</div><ul>';
+      result.unmapped.forEach(u => html += `<li>${u.mfKey}: &yen;${fmt(u.amount)}</li>`);
+      html += '</ul>';
+    }
+    if (result.notFound && result.notFound.length > 0) {
+      html += '<div class="detail">行不明:</div><ul>';
+      result.notFound.forEach(n => html += `<li>${n.label}: &yen;${fmt(n.amount)}</li>`);
+      html += '</ul>';
+    }
+    html += '</div>';
+    el.innerHTML = html;
+    setTimeout(() => el.innerHTML = '', 15000);
+  }
+
+  function fmt(n) { return Number(n).toLocaleString('ja-JP'); }
+  function fmtMonth(ym) {
+    if (!ym) return '';
+    const [y, m] = ym.split('-');
+    return `${y}年${parseInt(m)}月`;
+  }
+</script>
+</body>
+</html>

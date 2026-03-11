@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+    <h3>📻 プラッと反響収集</h3>
+
+    <div class="section">
+        <h4>1. 検索クエリ生成 (新しいタブ)</h4>
+        <div class="input-group">
+            <label>放送日 (YYYY-MM-DD): <input type="date" id="airdate"></label>
+        </div>
+        <div class="input-group">
+            <label>場所: <input type="text" id="location" placeholder="例: 荻窪"></label>
+        </div>
+        <div class="input-group">
+            <label>ゲスト: <input type="text" id="guests" placeholder="例: ゲストA/ゲストB"></label>
+        </div>
+        <div class="buttons">
+            <button id="btn-search-x-recall">X検索 (広く)</button>
+            <button id="btn-search-x-precision">X検索 (感想)</button>
+            <button id="btn-search-note">note検索</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h4>2. 現在のページ情報の抽出</h4>
+        <p class="desc">Xの個別ポストやnote記事を開いた状態で押すと、スプレッドシート用形式（TSV）で自動抽出します。</p>
+        <button id="btn-extract" class="primary">情報を抽出してTSV化</button>
+        <textarea id="output" rows="6" placeholder="ここに抽出結果が表示されます"></textarea>
+        <button id="btn-copy">📋 クリップボードにコピー</button>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>

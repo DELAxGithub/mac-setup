@@ -1,0 +1,53 @@
+name: Buycycle Daily Scraper
+
+on:
+  schedule:
+    # 毎日 UTC 06:00 (日本時間 15:00 / スペイン時間 07:00) に実行
+    - cron: '0 6 * * *'
+  workflow_dispatch: # GitHub上で手動実行できるボタンを表示
+
+jobs:
+  scrape-and-notify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # 通知済みファイルの履歴をリポジトリへ自動コミットするために必要
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Google Workspace (GWS) CLI
+        run: npm install -g @googleworkspace/cli
+
+      - name: Restore GWS CLI Credentials from Secrets
+        # ローカルの認証情報をbase64エンコードしてGitHub Secretsに入れておくことで
+        # GitHub Actions上でも gws コマンドを認証済み状態として使えます。
+        run: |
+          mkdir -p ~/.config/gws
+          echo "${{ secrets.GWS_CLIENT_SECRET_BASE64 }}" | base64 -d > ~/.config/gws/client_secret.json
+          echo "${{ secrets.GWS_CREDENTIALS_BASE64 }}" | base64 -d > ~/.config/gws/credentials.json
+
+      - name: Run Scraper Action
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: npx tsx index.ts
+
+      - name: Commit and push updated state
+        # 実行後に notified_urls.json が更新されていればリポジトリにコミットし、次回の重複を防ぐ
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add notified_urls.json
+          git commit -m "chore: update notified_urls.json [skip ci]" || echo "No new bikes notified. Nothing to commit."
+          git push
