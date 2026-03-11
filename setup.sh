@@ -80,14 +80,14 @@ else
 fi
 
 # 7. Cleanup Dock (remove all persistent apps)
-echo "[7/8] Cleaning up Dock..."
+echo "[7/9] Cleaning up Dock..."
 defaults write com.apple.dock persistent-apps -array
 defaults write com.apple.dock persistent-others -array
 killall Dock
 echo "  -> Dock icons cleared"
 
 # 8. Setup Claude Code settings
-echo "[8/8] Setting up Claude Code..."
+echo "[8/9] Setting up Claude Code..."
 CLAUDE_DIR="$HOME/.claude"
 mkdir -p "$CLAUDE_DIR/commands"
 if [ -d "$SCRIPT_DIR/claude/commands" ]; then
@@ -99,6 +99,23 @@ if [ -f "$SCRIPT_DIR/claude/settings.json" ] && [ ! -f "$CLAUDE_DIR/settings.jso
     echo "  -> settings.json copied"
 else
     echo "  -> settings.json already exists (skipped)"
+fi
+
+# 9. Setup multi-agent coordination files
+echo "[9/9] Setting up multi-agent coordination..."
+SRC_DIR="$HOME/src"
+mkdir -p "$SRC_DIR/.agents/workflows"
+if [ -f "$SCRIPT_DIR/agents/CLAUDE.md" ]; then
+    cp "$SCRIPT_DIR/agents/CLAUDE.md" "$SRC_DIR/CLAUDE.md"
+    echo "  -> ~/src/CLAUDE.md deployed"
+fi
+if [ -f "$SCRIPT_DIR/agents/coordination.md" ]; then
+    cp "$SCRIPT_DIR/agents/coordination.md" "$SRC_DIR/.agents/coordination.md"
+    echo "  -> coordination.md deployed"
+fi
+if [ -d "$SCRIPT_DIR/agents/workflows" ]; then
+    cp "$SCRIPT_DIR/agents/workflows/"*.md "$SRC_DIR/.agents/workflows/" 2>/dev/null
+    echo "  -> Workflows copied: $(ls "$SCRIPT_DIR/agents/workflows/"*.md 2>/dev/null | wc -l | tr -d ' ') files"
 fi
 
 echo ""
