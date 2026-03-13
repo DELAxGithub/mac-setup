@@ -34,14 +34,15 @@
 
 ## Pull モード（別マシンで作業開始するとき）
 
-1. `~/src/` 配下の全 `.git` リポジトリで `git pull`
-2. リモートがあるが `~/src/` にないリポジトリは検出できないので、GitHub上のリポジトリ一覧 (`gh repo list`) と比較して未cloneを提示
-3. 結果を表示:
+1. `~/src/` 配下の全 `.git` リポジトリで `git fetch` → `git pull`
+2. **必ず実行**: `gh repo list --limit 100 --json name,isPrivate` で GitHub 上の全リポジトリを取得し、`~/src/` 配下のディレクトリ名と突合する
+3. 未 clone のリポジトリがあれば一覧表示し、各リポジトリについて `git clone` するか確認する（ユーザーが「全部」と言ったらまとめて clone）
+4. 結果を表示:
    - Updated: pull で更新されたリポジトリ
    - Already up-to-date: 変更なし
-   - Not cloned: GitHub にあるが ~/src/ にない（clone提案）
+   - **Not cloned: GitHub にあるが ~/src/ にない → clone するか確認**
    - Conflict: コンフリクト発生（手動対応を案内）
-4. MEMORY.md の内容を確認して現状報告
+5. MEMORY.md の内容を確認して現状報告
 
 ## ルール
 
