@@ -1,5 +1,14 @@
 マシン間の同期を行う。引数: $ARGUMENTS (push / pull / status)
 
+## マシン判定
+
+実行開始時に `hostname` でどのマシンか自動判定し、ヘッダーに表示する:
+- `DelaxPronoMacBook-Pro` を含む → **サブ機（MacBook Pro）**
+- `DelaxPronoMac-Studio` を含む → **メイン機（Mac Studio）**
+- それ以外 → ホスト名を表示して「不明なマシン」と警告
+
+出力の冒頭に `📍 サブ機（MacBook Pro）で実行中` のように表示する。
+
 ## モード判定
 
 - `push` → Push モード（作業機を離れるとき）
