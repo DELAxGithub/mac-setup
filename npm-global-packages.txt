@@ -1,0 +1,8 @@
+# Global npm packages (managed via mise node)
+# Install all: xargs -I{} npm install -g {} < npm-global-packages.txt
+@anthropic-ai/claude-code
+@google/clasp
+@google/gemini-cli
+@googleworkspace/cli
+@openai/codex
+vercel
