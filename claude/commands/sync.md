@@ -1,20 +1,76 @@
-マシン間の同期を行う。引数: $ARGUMENTS (push / pull / status)
+マシン間の同期を行う。引数: $ARGUMENTS (quick / push / pull / status)
 
 ## マシン判定
 
 実行開始時に `hostname` でどのマシンか自動判定し、ヘッダーに表示する:
-- `DelaxPronoMacBook-Pro` を含む → **サブ機（MacBook Pro）**
-- `DelaxPronoMac-Studio` を含む → **メイン機（Mac Studio）**
+- `MacBook-Pro` を含む → **サブ機（MacBook Pro）** / ユーザー: `delaxpro` / 相手: `delaxstudio@delaxstudionoMac-Studio.local`
+- `Mac-Studio` を含む → **メイン機（Mac Studio）** / ユーザー: `delaxstudio` / 相手: `delaxpro@DelaxPronoMacBook-Pro.local`
 - それ以外 → ホスト名を表示して「不明なマシン」と警告
 
-出力の冒頭に `📍 サブ機（MacBook Pro）で実行中` のように表示する。
+出力の冒頭に `📍 メイン機（Mac Studio）で実行中` のように表示する。
 
 ## モード判定
 
-- `push` → Push モード（作業機を離れるとき）
-- `pull` → Pull モード（別マシンで作業開始するとき）
+- `quick` → Quick モード（rsyncでWIPごと高速転送）
+- `push` → Push モード（git commit & push、正式バックアップ）
+- `pull` → Pull モード（git pull、別マシンで作業開始）
 - `status` → Status モード（状態確認のみ）
 - 引数なし → Status モードを実行し、ユーザーに次のアクションを提案
+
+## Quick モード（rsyncでWIP高速転送）
+
+コミット不要でWIPのまま相手マシンに同期する。同一ネットワーク前提。
+
+1. 相手マシンにSSH接続確認（LAN → Tailscale の順にフォールバック）:
+   ```bash
+   # まずLAN（Bonjour）を試す
+   ssh -o ConnectTimeout=3 -o BatchMode=yes <相手.local> echo ok
+   # 失敗したらTailscaleホスト名で試す
+   ssh -o ConnectTimeout=3 -o BatchMode=yes <相手tailscale名> echo ok
+   ```
+   - Tailscaleホスト名:
+     - Mac Studio: `delaxstudiomac-studio`
+     - MacBook Pro: `delaxpromacbook-pro`
+     - MacBook Air: `macbook-air`
+   - 両方失敗: 「相手マシンに到達できません。`/sync push` でgit経由の同期をしますか？」と提案
+   - SSH鍵未設定の場合: セットアップ手順を案内（後述）
+
+2. dry-runで転送内容を確認:
+   ```bash
+   rsync -avzn --delete \
+     --exclude='.git' \
+     --exclude='node_modules' \
+     --exclude='.venv' \
+     --exclude='__pycache__' \
+     --exclude='.DS_Store' \
+     --exclude='.env' \
+     --exclude='.env.*' \
+     --exclude='*.pyc' \
+     --exclude='.next' \
+     --exclude='build/' \
+     --exclude='dist/' \
+     ~/src/ <相手ホスト>:~/src/
+   ```
+   - 転送ファイル数を表示し、**ユーザー確認を取る**
+
+3. 確認後、実際にrsync実行（dry-runの `-n` を外す）
+
+4. Claude Codeスキルも同期:
+   ```bash
+   rsync -avz ~/.claude/commands/ <相手ホスト>:~/.claude/commands/
+   ```
+
+5. 完了サマリー: 転送ファイル数、所要時間
+
+### SSH初回セットアップ（必要な場合のみ案内）
+
+```bash
+# 1. 相手マシンのシステム設定 → 一般 → 共有 → リモートログインを有効化
+# 2. SSH鍵をコピー
+ssh-copy-id <相手ホスト>
+# 3. 接続テスト
+ssh <相手ホスト> echo "OK"
+```
 
 ## Status モード
 
@@ -28,7 +84,7 @@
    - 要pull: behind があるリポジトリ
    - OK: クリーンなリポジトリ
 
-## Push モード（作業機を離れるとき）
+## Push モード（git commit & push、正式バックアップ）
 
 1. まず Status モードを実行して全体像を表示
 2. dirty / unpushed なリポジトリの一覧をユーザーに提示
@@ -44,7 +100,7 @@
 5. 全リポジトリ完了後、MEMORY.md を最新に更新
 6. 同期サマリーを表示
 
-## Pull モード（別マシンで作業開始するとき）
+## Pull モード（git pull、別マシンで作業開始）
 
 1. `~/src/` 配下の全 `.git` リポジトリで `git fetch` → `git pull`
 2. **必ず実行**: `gh repo list --limit 100 --json name,isPrivate` で GitHub 上の全リポジトリを取得し、`~/src/` 配下のディレクトリ名と突合する
@@ -64,6 +120,7 @@
 
 - force push しない
 - secrets 警告は必ず行う
-- ユーザー確認なしに push/commit しない
+- ユーザー確認なしに push/commit/rsync しない
 - 日本語で出力
 - エラーが出たリポジトリはスキップして続行し、最後にまとめて報告
+- quick モードは `.git` を除外するため、gitの歴史は各マシン独立（clone済み前提）
