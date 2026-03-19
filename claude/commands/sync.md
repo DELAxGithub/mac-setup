@@ -17,14 +17,14 @@
 - `status` → Status モード（状態確認のみ）
 - 引数なし → Status モードを実行し、ユーザーに次のアクションを提案
 
-## Quick モード（双方向rsyncで差分追加）
+## Quick モード（双方向rsyncでWIP高速転送）
 
-コミット不要でWIPのまま双方向同期する。`--delete` なしなので、どちらか一方にしかないファイルは互いに追加される（Dropbox的挙動）。同一ネットワーク前提。
+コミット不要でWIPのまま双方向同期する。`--delete` なし = 両マシンの和集合になる。
 
 1. 相手マシンにSSH接続確認（LAN → Tailscale の順にフォールバック）:
    ```bash
    # まずLAN（Bonjour）を試す
-   ssh -o ConnectTimeout=3 -o BatchMode=yes <相手.local> echo ok
+   ssh -o ConnectTimeout=3 -o BatchMode=yes <相手ホスト> echo ok
    # 失敗したらTailscaleホスト名で試す
    ssh -o ConnectTimeout=3 -o BatchMode=yes <相手tailscale名> echo ok
    ```
@@ -35,48 +35,29 @@
    - 両方失敗: 「相手マシンに到達できません。`/sync push` でgit経由の同期をしますか？」と提案
    - SSH鍵未設定の場合: セットアップ手順を案内（後述）
 
-2. rsync共通除外オプション（以降 `<EXCLUDES>` と表記）:
-   ```
-   --exclude='.git' --exclude='node_modules' --exclude='.venv'
-   --exclude='__pycache__' --exclude='.DS_Store' --exclude='.env'
-   --exclude='.env.*' --exclude='*.pyc' --exclude='.next'
-   --exclude='build/' --exclude='dist/'
-   ```
-
-3. **Step 1: 受信**（相手 → 自分）dry-run で差分確認:
+2. dry-runで**双方向**の転送内容を確認:
    ```bash
-   rsync -avzn <EXCLUDES> <相手ホスト>:~/src/ ~/src/
+   EXCLUDES="--exclude='.git' --exclude='node_modules' --exclude='.venv' \
+     --exclude='__pycache__' --exclude='.DS_Store' --exclude='.env' \
+     --exclude='.env.*' --exclude='*.pyc' --exclude='.next' \
+     --exclude='build/' --exclude='dist/'"
+   # 送信（自分→相手）
+   rsync -avzn $EXCLUDES ~/src/ <相手ホスト>:~/src/
+   # 受信（相手→自分）
+   rsync -avzn $EXCLUDES <相手ホスト>:~/src/ ~/src/
    ```
-   - 転送ファイル数・新規ディレクトリを表示
+   - 両方向の転送ファイル数をまとめて表示し、**ユーザー確認を取る**
+   - `--delete` は使わない（片方にしかないファイルは残す）
 
-4. **Step 2: 送信**（自分 → 相手）dry-run で差分確認:
+3. 確認後、実際にrsync実行（dry-runの `-n` を外す、両方向）
+
+4. Claude Codeスキルも双方向同期:
    ```bash
-   rsync -avzn <EXCLUDES> ~/src/ <相手ホスト>:~/src/
-   ```
-   - 転送ファイル数・新規ディレクトリを表示
-
-5. 両方のdry-run結果をまとめて表示し、**ユーザー確認を取る**:
-   - 受信: N files（新規ディレクトリがあれば列挙）
-   - 送信: N files（新規ディレクトリがあれば列挙）
-   - 同じファイルが両方で変更されている場合は警告（タイムスタンプが新しい方が勝つ旨を説明）
-
-6. 確認後、実際にrsync実行（受信 → 送信の順）:
-   ```bash
-   # Step 1: 受信
-   rsync -avz <EXCLUDES> <相手ホスト>:~/src/ ~/src/
-   # Step 2: 送信
-   rsync -avz <EXCLUDES> ~/src/ <相手ホスト>:~/src/
-   ```
-
-7. Claude Codeスキルも双方向同期（`--delete` なし）:
-   ```bash
-   # 受信
-   rsync -avz <相手ホスト>:~/.claude/commands/ ~/.claude/commands/
-   # 送信
    rsync -avz ~/.claude/commands/ <相手ホスト>:~/.claude/commands/
+   rsync -avz <相手ホスト>:~/.claude/commands/ ~/.claude/commands/
    ```
 
-8. 完了サマリー: 受信/送信それぞれの転送ファイル数、所要時間
+5. 完了サマリー: 送信/受信ファイル数、所要時間
 
 ### SSH初回セットアップ（必要な場合のみ案内）
 
