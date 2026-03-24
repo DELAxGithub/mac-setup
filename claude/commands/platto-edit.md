@@ -4,8 +4,8 @@
 引数: エピソード番号（例: /platto-edit 35）
 
 ## 前提
-- 作業ディレクトリ: ~/src/csvtoxml/
-- エピソードデータ: `{EP}radio/` ディレクトリに以下が配置済み:
+- 作業ディレクトリ: ~/src/platto-automation/
+- エピソードデータ: `episodes/{EP}radio/` ディレクトリに以下が配置済み:
   - 対談CSV: `{N}_1.csv`, `{N}_2.csv`（Premiere書き起こし、カンマ区切り）
   - Whisper CSV: `NNNNN_Amic.csv`, `NNNNN_Bmic.csv` 等（セミコロン区切り）
   - テンプレートXML: `{N}_1.xml`, `{N}_2.xml`（Premiere書き出し）
@@ -79,10 +79,9 @@ Part2も同様に実行。
 - 問題点・警告（大きなギャップ、マッチング失敗箇所等）
 
 ## 既存コード参照
-- `~/src/csvtoxml/merge_dialogue_031.py` — Whisperマージのロジック
-- `~/src/csvtoxml/clean_dialogue_031.py` — クリーンアップのロジック
-- `~/src/csvtoxml/convert_034radio.py` — XML生成の呼び出しパターン
-- `~/src/csvtoxml/src/csvtoxml/writers/premiere.py` — Premiere XML生成エンジン
+- `~/src/platto-automation/episodes/_legacy_scripts/merge_dialogue_031.py` — Whisperマージのロジック参考
+- `~/src/platto-automation/episodes/_legacy_scripts/clean_dialogue_031.py` — クリーンアップのロジック参考
+- `~/src/platto-automation/csvtoxml/src/csvtoxml/writers/premiere.py` — Premiere XML生成エンジン
 
 ## 注意事項
 - Whisper CSVはセミコロン区切り、対談CSVはカンマ区切り（フォーマット混在に注意）
