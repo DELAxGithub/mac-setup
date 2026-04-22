@@ -2,3 +2,9 @@
 *.log
 node_modules/
 projects/文字起こし/test/
+
+# env files — track only *.tpl templates
+.env
+.env.*
+!.env.tpl
+!.env.*.tpl
