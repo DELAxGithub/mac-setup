@@ -1,0 +1,12 @@
+anthropic.claude-code
+highagency.pencildev
+llvm-vs-code-extensions.lldb-dap
+mechatroner.rainbow-csv
+ms-ceintl.vscode-language-pack-ja
+ms-python.debugpy
+ms-python.python
+ms-python.vscode-pylance
+ms-python.vscode-python-envs
+openai.chatgpt
+swiftlang.swift-vscode
+tomoki1207.pdf

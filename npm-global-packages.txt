@@ -4,6 +4,11 @@
 @google/clasp
 @google/gemini-cli
 @googleworkspace/cli
+@modelcontextprotocol/server-puppeteer
+@musistudio/claude-code-router
 @openai/codex
-defuddle
+@qwen-code/qwen-code
+@tobilu/qmd
+defuddle-cli
 vercel
+wrangler

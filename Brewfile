@@ -25,6 +25,8 @@ brew "ffmpeg"       # Video/audio processing
 brew "tesseract"    # OCR
 brew "ghostscript"  # PDF processing
 brew "poppler"      # PDF utilities (pdftotext, pdfinfo)
+brew "exiftool"     # EXIF/GPS metadata (insta360-gps-probe, pdf-to-course)
+brew "mpg123"       # MP3 decoder (podcast pipelines)
 
 # Python / dev utilities
 brew "pipx"         # Isolated Python CLI installs
@@ -37,13 +39,16 @@ brew "xcodes"       # Xcode version manager
 # Cloud / data
 brew "rclone"               # Cloud storage sync
 brew "supabase/tap/supabase" # Supabase CLI
+brew "cloudflared"          # Cloudflare tunnel (tachi-tracker etc.)
 
 # Local LLM / analysis
 brew "llama.cpp"    # Local LLM runtime (claude-local fallback)
+brew "ollama"       # Primary local LLM stack (Mac Studio, gemma4 keep-alive 24h)
 brew "yt-dlp"       # YouTube downloader (playlist-analyzer skill dependency)
 
 # Git / VCS utilities
 brew "git-filter-repo"  # History rewrite (post-leak hardening, 2026-05-09)
+brew "ddrescue"         # Robust large-file copy (SD-import fcopyfile workaround)
 
 # Terminal utilities
 brew "tmux"         # Terminal multiplexer
