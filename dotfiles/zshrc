@@ -1,0 +1,82 @@
+
+# Added by mac-setup
+# Ensure Homebrew is loaded (fix for non-login shells like Obsidian)
+if [[ -x /opt/homebrew/bin/brew ]]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+fi
+
+export HOMEBREW_FORBIDDEN_FORMULAE="node python python3 pip npm pnpm yarn"
+
+# mise
+if command -v mise >/dev/null 2>&1; then
+  eval "$(mise activate zsh)"
+fi
+
+# starship prompt (optional)
+# eval "$(starship init zsh)"
+alias parents='open vnc://100.81.1.52'
+alias parents='open -g -a Tailscale; sleep 2; open vnc://100.81.1.52'
+
+# Google Cloud SDK
+export PATH="/opt/homebrew/share/google-cloud-sdk/bin:$PATH"
+
+# DELAX reports root (heavy artifacts → Dropbox)
+export DELAX_REPORTS_ROOT="$HOME/Dropbox/delax-reports"
+
+# --- local helpers / local LLM ---
+export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
+
+# claude-local : Claudeレートリミット時のフォールバック。
+#   ~/bin/llama-chat (port 8080, Qwen3-Coder-30B-A3B, Anthropic Messages API互換) を
+#   未起動なら起動し、ANTHROPIC_BASE_URL を向けて `claude` CLI を実行する。
+claude-local() {
+  local port=8080
+  if ! curl -s -f "http://127.0.0.1:${port}/health" >/dev/null 2>&1; then
+    echo "[claude-local] starting llama-chat (30B, ~12s)..."
+    ~/bin/llama-chat >/tmp/llama-chat.log 2>&1 &
+    disown
+    local i
+    for i in {1..60}; do
+      if curl -s -f "http://127.0.0.1:${port}/health" >/dev/null 2>&1; then
+        echo "[claude-local] ready"
+        break
+      fi
+      sleep 1
+    done
+  fi
+  # --bare: minimal system prompt (skills/memory/CLAUDE.md自動読み込みを止め、
+  # ローカル30Bモデルの32Kコンテキストに収まるよう軽量化)
+  ANTHROPIC_BASE_URL="http://127.0.0.1:${port}" \
+  ANTHROPIC_AUTH_TOKEN="dummy" \
+  ANTHROPIC_MODEL="local" \
+  command claude --bare "$@"
+}
+
+# llama-stop : ローカルllama-serverを停止してメモリ解放
+llama-stop() { pkill -f "llama-server.*Qwen" && echo "stopped" || echo "not running"; }
+
+# --- gswitch : machine-switch ritual (memory: feedback_machine_switch_ritual.md) ---
+# Run inside any git repo before starting work after a machine switch
+gswitch() {
+  echo "=== fetch ==="
+  git fetch origin || return 1
+  echo ""
+  echo "=== status ==="
+  git status
+  echo ""
+  echo "=== ahead/behind vs upstream ==="
+  git log --oneline --left-right HEAD...@{u} 2>/dev/null | head -10 || echo "(no upstream)"
+}
+
+# ============================================================
+# Per-machine credentials below — managed via 1Password CLI (op).
+# DO NOT commit secrets to mac-setup. Each machine adds its own
+# block at the bottom of ~/.zshrc using `op inject` or manual export.
+#
+# Example (App Store Connect for fastlane):
+#   export ASC_KEY_ID="$(op read 'op://Private/AppStoreConnect/key-id')"
+#   export ASC_ISSUER_ID="$(op read 'op://Private/AppStoreConnect/issuer-id')"
+#   export ASC_KEY_PATH="$HOME/.appstoreconnect/AuthKey_${ASC_KEY_ID}.p8"
+#
+# See claude-config memory: op-env-pattern.md
+# ============================================================
