@@ -23,6 +23,31 @@ brew "pkgconf"
 # Media processing
 brew "ffmpeg"       # Video/audio processing
 brew "tesseract"    # OCR
+brew "ghostscript"  # PDF processing
+brew "poppler"      # PDF utilities (pdftotext, pdfinfo)
+
+# Python / dev utilities
+brew "pipx"         # Isolated Python CLI installs
+
+# iOS development (fastlane / cocoapods workflow)
+brew "cocoapods"
+brew "fastlane"
+brew "xcodes"       # Xcode version manager
+
+# Cloud / data
+brew "rclone"               # Cloud storage sync
+brew "supabase/tap/supabase" # Supabase CLI
+
+# Local LLM / analysis
+brew "llama.cpp"    # Local LLM runtime (claude-local fallback)
+brew "yt-dlp"       # YouTube downloader (playlist-analyzer skill dependency)
+
+# Git / VCS utilities
+brew "git-filter-repo"  # History rewrite (post-leak hardening, 2026-05-09)
+
+# Terminal utilities
+brew "tmux"         # Terminal multiplexer
+brew "fileicon"     # Custom file icons
 
 # Applications (Casks)
 cask "visual-studio-code"

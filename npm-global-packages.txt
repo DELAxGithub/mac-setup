@@ -5,4 +5,5 @@
 @google/gemini-cli
 @googleworkspace/cli
 @openai/codex
+defuddle
 vercel
