@@ -1,0 +1,269 @@
+#!/usr/bin/env python3
+# find-tool — full-text index CLI for ~/src/ repos + memory wiki + CLAUDE.md
+# Issue: DELAxGithub/delax-tasks#1
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+import unicodedata
+from dataclasses import dataclass, field
+from pathlib import Path
+
+HOME = Path.home()
+SRC = HOME / "src"
+MEMORY_DIR = HOME / ".claude" / "projects" / "-Users-delaxpro-src" / "memory"
+MAX_DEPTH = 5  # ~/src/<category>/<repo>/<subdir>/<file>.md max
+
+# kind -> (root, glob-pattern-or-filename, is_recursive)
+KIND_SPECS: dict[str, list[tuple[Path, str, bool]]] = {
+    "memory":       [(MEMORY_DIR, "*.md", False)],
+    "claude":       [(SRC, "CLAUDE.md", True)],
+    "requirements": [(SRC, "REQUIREMENTS.md", True)],
+    "readme":       [(SRC, "README.md", True)],
+    "state":        [(SRC, ".claude/state/current.md", True)],
+    "devlog":       [(SRC / "devlog", "*.md", True)],
+}
+ALL_KINDS = list(KIND_SPECS.keys())
+
+# Skip well-known build/vendor noise; pruned at directory level when walking
+SKIP_PARTS = {"node_modules", ".git", "DerivedData", "dist", "build", ".next", ".venv", "venv", "_archive", "test-results", "Pods", "__pycache__"}
+
+
+@dataclass
+class Hit:
+    path: Path
+    kind: str
+    score: int = 0
+    title: str = ""
+    description: str = ""
+    matches: list[tuple[int, str]] = field(default_factory=list)  # (1-indexed line, text)
+
+
+def _walk_with_skip(root: Path, max_depth: int):
+    """Iterate (Path) for files under root, pruning SKIP_PARTS dirs and depth."""
+    if not root.is_dir():
+        return
+    root_parts = len(root.parts)
+    stack = [root]
+    while stack:
+        d = stack.pop()
+        depth = len(d.parts) - root_parts
+        try:
+            children = list(d.iterdir())
+        except (PermissionError, OSError):
+            continue
+        for c in children:
+            if c.name in SKIP_PARTS:
+                continue
+            if c.is_symlink():
+                continue  # avoid loops; tracked repos are real files
+            if c.is_dir():
+                if depth + 1 <= max_depth:
+                    stack.append(c)
+            elif c.is_file():
+                yield c
+
+
+def collect_files(kind: str) -> list[Path]:
+    out: list[Path] = []
+    for root, pattern, recursive in KIND_SPECS[kind]:
+        if not recursive:
+            try:
+                out.extend(p for p in root.glob(pattern) if p.is_file())
+            except OSError:
+                pass
+            continue
+        # Recursive walk with skip-list pruning
+        target_basename = Path(pattern).name
+        target_rel_parts = Path(pattern).parts  # e.g. (".claude","state","current.md")
+        for f in _walk_with_skip(root, MAX_DEPTH):
+            if len(target_rel_parts) == 1:
+                if f.name == target_basename:
+                    out.append(f)
+            else:
+                # Match suffix: file's last N parts == pattern parts
+                if f.parts[-len(target_rel_parts):] == target_rel_parts:
+                    out.append(f)
+    return out
+
+
+def read_text(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+
+
+_FRONTMATTER_RE = re.compile(r"^---\r?\n(.*?)\r?\n---\r?\n", re.DOTALL)
+_NAME_RE = re.compile(r"^name:\s*(.+)$", re.MULTILINE)
+_DESC_RE = re.compile(r"^description:\s*(.+)$", re.MULTILINE)
+_H1_RE = re.compile(r"^#\s+(.+)$", re.MULTILINE)
+
+
+def extract_meta(text: str) -> tuple[str, str]:
+    """Return (title, description). Uses frontmatter if present, else first H1."""
+    m = _FRONTMATTER_RE.match(text)
+    if m:
+        fm = m.group(1)
+        name = _NAME_RE.search(fm)
+        desc = _DESC_RE.search(fm)
+        return (name.group(1).strip() if name else "", desc.group(1).strip() if desc else "")
+    h1 = _H1_RE.search(text)
+    return (h1.group(1).strip() if h1 else "", "")
+
+
+def _norm(s: str) -> str:
+    """NFC + lowercase. Avoids NFC/NFD mismatch on Japanese paths/keywords."""
+    return unicodedata.normalize("NFC", s).lower()
+
+
+def score_file(path: Path, kind: str, keywords: list[str]) -> Hit | None:
+    text = read_text(path)
+    if not text:
+        return None
+    lowered = _norm(text)
+    basename = _norm(path.name)
+    # AND match across keywords
+    for kw in keywords:
+        if kw not in lowered and kw not in basename:
+            return None
+
+    title, description = extract_meta(text)
+    title_lc = _norm(title)
+    desc_lc = _norm(description)
+
+    hit = Hit(path=path, kind=kind, title=title or path.stem, description=description)
+
+    for kw in keywords:
+        if kw in basename:
+            hit.score += 100
+        if kw in title_lc:
+            hit.score += 60
+        if kw in desc_lc:
+            hit.score += 40
+
+    # Body matches: scan lines, cap at 10
+    lines = text.splitlines()
+    body_hits = 0
+    for i, line in enumerate(lines, start=1):
+        line_lc = _norm(line)
+        if all(kw in line_lc for kw in keywords):
+            hit.matches.append((i, line.rstrip()))
+            body_hits += 1
+            if body_hits >= 10:
+                break
+    hit.score += min(body_hits, 10) * 5
+
+    if hit.score == 0 and not hit.matches:
+        return None
+    return hit
+
+
+def collect(kinds: list[str], keywords: list[str]) -> list[Hit]:
+    seen: set[Path] = set()
+    hits: list[Hit] = []
+    for kind in kinds:
+        for path in collect_files(kind):
+            if path in seen:
+                continue
+            seen.add(path)
+            h = score_file(path, kind, keywords)
+            if h is not None:
+                hits.append(h)
+    hits.sort(key=lambda h: (-h.score, str(h.path)))
+    return hits
+
+
+def fmt_md(hits: list[Hit], limit: int) -> str:
+    if not hits:
+        return "_no hits_"
+    out = []
+    for h in hits[:limit]:
+        first = h.matches[0] if h.matches else (0, "")
+        rel = str(h.path).replace(str(HOME), "~")
+        line_anchor = f"#L{first[0]}" if first[0] else ""
+        out.append(f"- **{h.title}** [{h.kind}] — [{rel}]({h.path}{line_anchor}) — score {h.score}")
+        if h.description:
+            out.append(f"    - {h.description}")
+        for ln, txt in h.matches[:3]:
+            out.append(f"    - L{ln}: {txt.strip()[:160]}")
+    return "\n".join(out)
+
+
+def fmt_json(hits: list[Hit], limit: int) -> str:
+    payload = [
+        {
+            "title": h.title,
+            "kind": h.kind,
+            "path": str(h.path),
+            "score": h.score,
+            "description": h.description,
+            "matches": [{"line": ln, "text": txt} for ln, txt in h.matches],
+        }
+        for h in hits[:limit]
+    ]
+    return json.dumps(payload, ensure_ascii=False, indent=2)
+
+
+def fmt_tsv(hits: list[Hit], limit: int) -> str:
+    out = []
+    for h in hits[:limit]:
+        first = h.matches[0][1] if h.matches else ""
+        out.append("\t".join([str(h.score), h.kind, str(h.path), first.strip()[:200]]))
+    return "\n".join(out)
+
+
+def parse_args(argv: list[str]) -> argparse.Namespace:
+    p = argparse.ArgumentParser(
+        prog="find-tool",
+        description="Full-text index over ~/src/ CLAUDE.md / READMEs / state / devlogs / memory wiki.",
+        epilog="""Examples:
+  find-tool platto BGM
+  find-tool whisper --type memory
+  find-tool davinci --format json --limit 5
+  find-tool 'shadow master' --type memory --type readme
+""",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p.add_argument("keywords", nargs="*", help="Keywords (AND-matched, case-insensitive)")
+    p.add_argument("--type", "-t", dest="types", action="append", choices=ALL_KINDS,
+                   help=f"Restrict to one source (repeatable). Default: all of {ALL_KINDS}")
+    p.add_argument("--format", "-f", default="md", choices=["md", "json", "tsv"],
+                   help="Output format (default: md)")
+    p.add_argument("--limit", "-n", type=int, default=10, help="Max hits (default: 10)")
+    p.add_argument("--list-kinds", action="store_true", help="List available source kinds and exit")
+    return p.parse_args(argv)
+
+
+def main(argv: list[str]) -> int:
+    args = parse_args(argv)
+    if args.list_kinds:
+        for k in ALL_KINDS:
+            specs = ", ".join(
+                f"{root}/**/{pat}" if rec else f"{root}/{pat}"
+                for root, pat, rec in KIND_SPECS[k]
+            )
+            print(f"{k}\t{specs}")
+        return 0
+    if not args.keywords:
+        print("error: provide at least one keyword (or --list-kinds).", file=sys.stderr)
+        return 2
+    kinds = args.types or ALL_KINDS
+    keywords = [_norm(k) for k in args.keywords]
+    hits = collect(kinds, keywords)
+    if args.format == "md":
+        print(fmt_md(hits, args.limit))
+    elif args.format == "json":
+        print(fmt_json(hits, args.limit))
+        # JSON consumers expect empty list to be a clean success
+        return 0
+    else:
+        print(fmt_tsv(hits, args.limit))
+    return 0 if hits else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

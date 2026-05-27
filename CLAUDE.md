@@ -31,6 +31,7 @@
 | `cp dotfiles/gitconfig ~/.gitconfig` | git commit author 適用 |
 | `cp dotfiles/claude-settings.json ~/.claude/settings.json` | Claude Code settings 適用 (品質ゲート + plugins + hooks) |
 | `bash setup.sh` | 新規マシン用 bootstrap (Brew + npm + mise + dotfiles を一括) |
+| `bash tools/install-find-tool.sh` | `find-tool` CLI を `~/bin/find-tool` に install。`~/src/` 横断全文検索（[tools/README.md](tools/README.md)） |
 
 ## 技術スタック
 
