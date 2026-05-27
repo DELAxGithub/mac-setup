@@ -32,12 +32,15 @@ bash ~/src/mac-setup/tools/install-find-tool.sh
 
 ### スコアリング
 
-キーワード単位で加点（AND 一致、case-insensitive）:
+キーワード単位で加点（AND 一致、case + Unicode NFC 正規化）:
 
-- ファイル名一致: +100
+- ファイル名一致: +100（パス一致と排他、ファイル名側を優先）
+- パス一致（親ディレクトリ名等）: +30
 - frontmatter `name:` / H1 一致: +60
 - frontmatter `description:` 一致: +40
 - 本文行一致: +5 × min(hits, 10)
+
+ひとつのキーワードにつき +100 と +30 は排他（basename にあれば path 加点はスキップ）。AND 一致条件は「`$HOME` 以下の相対パス or 本文」のいずれかに全キーワードが含まれること。`$HOME` より上のセグメント（`/Users` / ユーザー名）は match 表面に含めないので、 `find-tool delaxpro` のようなユーザー名検索で全件ヒットすることはない。リポ名や category dir 名（例: `70_プラッと/`）はヒットする。
 
 スコア降順、同点はパス昇順。
 
@@ -95,6 +98,15 @@ JSON を pipe して agent に渡せば、ヒットを再ランキング / sub-q
 | 言語 | **Python 3 stdlib** | macOS 標準で動く。`rg` は Brewfile 未登録 + Claude Code shim と衝突する。bash + grep + jq の 100 行よりロジック保守がしやすい |
 | インデックス方式 | **scan-on-query** | キャッシュなし。対象ファイル < 500 で十分高速 (実測 < 1 秒) |
 | 設置場所 | `mac-setup/tools/` + `~/bin/` symlink | 両機同期 (git) + PATH 露出を分離 |
+
+### テスト
+
+```sh
+python3 ~/src/mac-setup/tools/tests/test_find_tool.py
+# -> 5 件すべて PASS で exit 0
+```
+
+pytest を入れていれば `python3 -m pytest tools/tests/` でも可。
 
 ### 副産物・拡張案（未実装）
 

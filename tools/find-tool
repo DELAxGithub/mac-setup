@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import json
 import re
 import sys
@@ -77,15 +78,17 @@ def collect_files(kind: str) -> list[Path]:
                 pass
             continue
         # Recursive walk with skip-list pruning
-        target_basename = Path(pattern).name
+        target_basename = Path(pattern).name  # may contain glob chars (*, ?)
         target_rel_parts = Path(pattern).parts  # e.g. (".claude","state","current.md")
         for f in _walk_with_skip(root, MAX_DEPTH):
             if len(target_rel_parts) == 1:
-                if f.name == target_basename:
+                if fnmatch.fnmatchcase(f.name, target_basename):
                     out.append(f)
             else:
-                # Match suffix: file's last N parts == pattern parts
-                if f.parts[-len(target_rel_parts):] == target_rel_parts:
+                # Match suffix: file's last N parts == pattern parts (last segment glob-aware)
+                tail = f.parts[-len(target_rel_parts):]
+                if (tail[:-1] == target_rel_parts[:-1]
+                        and fnmatch.fnmatchcase(tail[-1], target_rel_parts[-1])):
                     out.append(f)
     return out
 
@@ -120,15 +123,28 @@ def _norm(s: str) -> str:
     return unicodedata.normalize("NFC", s).lower()
 
 
+def _rel_for_match(path: Path) -> str:
+    """Path relative to $HOME, NFC-lowered. Strips the common prefix so
+    keywords like 'src' / 'delaxpro' do not match every indexed file.
+    Includes leading category dirs (e.g. '70_プラッと') so repo-name
+    searches still hit."""
+    try:
+        rel = path.relative_to(HOME)
+    except ValueError:
+        rel = path
+    return _norm(str(rel))
+
+
 def score_file(path: Path, kind: str, keywords: list[str]) -> Hit | None:
     text = read_text(path)
     if not text:
         return None
     lowered = _norm(text)
     basename = _norm(path.name)
-    # AND match across keywords
+    relpath_lc = _rel_for_match(path)
+    # AND match across keywords (anywhere in relative path or body)
     for kw in keywords:
-        if kw not in lowered and kw not in basename:
+        if kw not in lowered and kw not in relpath_lc:
             return None
 
     title, description = extract_meta(text)
@@ -138,8 +154,11 @@ def score_file(path: Path, kind: str, keywords: list[str]) -> Hit | None:
     hit = Hit(path=path, kind=kind, title=title or path.stem, description=description)
 
     for kw in keywords:
+        # basename vs path scoring is exclusive per keyword (basename wins)
         if kw in basename:
             hit.score += 100
+        elif kw in relpath_lc:
+            hit.score += 30  # parent dir / category folder match
         if kw in title_lc:
             hit.score += 60
         if kw in desc_lc:
