@@ -1,0 +1,31 @@
+# mac-setup
+
+> macOS development environment bootstrap. Declarative Brewfile, mise versions, dotfiles, VSCode extensions, and Claude Code config — keeps Mac Studio + MacBook Pro in sync via plain `git push`/`pull`.
+
+## What this is
+
+mac-setup is the declarative-source-of-truth for the DELAX developer environment across multiple Macs (Mac Studio, MacBook Pro, MacBook Air). It bootstraps a fresh machine via `./setup.sh` and keeps tooling deltas reviewable by treating Brewfile / npm globals / mise versions / VSCode extensions as committed declaration files.
+
+- Package manager: Homebrew (formulae + casks)
+- Language runtimes: mise (`mise install`)
+- npm globals: declared in `npm-global-packages.txt`
+- VSCode extensions: per-machine txt lists (`vscode-extensions-mbp.txt`, `vscode-extensions-studio.txt`)
+- Credentials: 1Password CLI (`op inject`, `op read`) — no plaintext secrets in repo
+- Multi-machine sync: manual `git push` / `pull` only — no Syncthing / auto-sync (intentional, see DELAX feedback memos)
+
+## Where to start
+
+- [README](https://github.com/DELAxGithub/mac-setup/blob/main/README.md) — overview and install steps
+- [CLAUDE.md](https://github.com/DELAxGithub/mac-setup/blob/main/CLAUDE.md) — directory map, commands, multi-machine policy
+- [setup.sh](https://github.com/DELAxGithub/mac-setup/blob/main/setup.sh) — bootstrap entry point
+- [Brewfile](https://github.com/DELAxGithub/mac-setup/blob/main/Brewfile) — formulae + casks
+- [mise-config.toml](https://github.com/DELAxGithub/mac-setup/blob/main/mise-config.toml) — language versions
+- [dotfiles/](https://github.com/DELAxGithub/mac-setup/tree/main/dotfiles) — shell / git / Claude Code settings
+- [tasks/](https://github.com/DELAxGithub/mac-setup/tree/main/tasks) — cross-machine handover task files
+
+## What this is NOT
+
+- Not a generic dotfiles framework — it is DELAX-specific (commit author, Claude Code skills, project assumptions)
+- Not Linux / Windows — macOS only
+- Not for fully automated sync — DELAX deliberately uses manual `git push/pull` after a 2026-05-09 incident with auto-sync
+- Not a secrets store — secrets stay in 1Password and are injected at runtime via `op`
