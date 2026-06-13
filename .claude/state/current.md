@@ -1,16 +1,20 @@
 # mac-setup — state
 
 User-editable notes go ABOVE the hook marker. Anything below is regenerated on session end.
-
 <!-- HOOK_GENERATED — do not edit; regenerated on session end. Add user notes ABOVE this marker. -->
 
-Generated: 2026-05-10T08:55:00Z
+Generated: 2026-06-07T10:37:37Z
 Branch: main
-Last commit: d9ba65b 2026-05-10 02:30:xx +0200 feat(dotfiles): union merge claude-settings.json from MBP+Studio [skip-moderate]
+Last commit: 3ad229d 2026-06-05 07:51:54 +0900 task: add Málaga Puerto del León downhill episode handoff for euroquest map
 
-## git log (last 10)
+## git log (last 20)
 
-    d9ba65b (HEAD -> main, origin/main) feat(dotfiles): union merge claude-settings.json from MBP+Studio [skip-moderate]
+    3ad229d (HEAD -> main, origin/main, origin/HEAD) task: add Málaga Puerto del León downhill episode handoff for euroquest map
+    26575a7 feat(find-tool): path-match relative to \$HOME + glob-aware kind specs + tests [moderated]
+    2a47cd0 docs: add llms.txt for AIO bot discovery
+    c419c26 feat(tools): add find-tool — ~/src/ full-text index CLI [moderated]
+    2c20ac0 docs: add CLAUDE.md + .claude/state/current.md [skip-moderate]
+    d9ba65b feat(dotfiles): union merge claude-settings.json from MBP+Studio [skip-moderate]
     fdaa88e chore(env): Studio drift audit — Brewfile +5, npm +6, vscode-studio list [skip-moderate]
     af06afa chore(deps): drift audit on MBP — add 13 brew leaves + defuddle npm + 50 VSCode ext list
     cc5ffd3 feat(dotfiles): add cross-machine zshrc / gitconfig / claude-settings
@@ -20,41 +24,32 @@ Last commit: d9ba65b 2026-05-10 02:30:xx +0200 feat(dotfiles): union merge claud
     f73e44b chore: add task — GCP usage skill & billing export handoff to Mac Studio
     1b3e489 security: decommission bicycle-research scraper and remove leaked .env
     deac35b sync: update Claude Code skills (memory-save, memory-search, platto-edit)
-
-## Uncommitted
-
-(clean)
+    c4003d0 Sync platto-edit skill from local commands
+    a7bb879 Resolve sync.md conflict: use bidirectional rsync design
+    d029690 Update sync quick mode to bidirectional rsync (no --delete)
+    d53b8d9 Add kindle-ocr skill and update sync.md with quick mode
+    5a8fd57 Sync Claude Code skills: review, review-to-markers, sd-import, security-check
 
 ## Recent devlog mentioning this project
 
 - src/devlog/2026-04-25.md
-- src/devlog/2026-05-10.md (Day 41 — multi-machine sync overhaul)
+- src/devlog/2026-05-10.md
 
-## Recent additions (2026-05-10)
+## docs/ contents
 
-新規 dir: `dotfiles/` — 両機共通の shell / git / Claude Code 設定の git 化:
-- `dotfiles/gitconfig` — commit author 統一 (Hiroshi Kodera <h.kodera@gmail.com>)
-- `dotfiles/zshrc` — Homebrew / mise / aliases / `claude-local` / `gswitch` 関数 (credential 部分は除外、1Password CLI で動的取得 template 注釈)
-- `dotfiles/claude-settings.json` — 両機 union merge: 30 perms / 8 plugins / Studio PreToolUse hooks (pre-push-check + pre-commit-moderate) / SessionStart/End bash + timeout 10
-- `dotfiles/README.md` — 適用方法 + 含まないもの (credential / machine-specific path)
+- docs/handy-setup.md
 
-drift audit:
-- `Brewfile` — MBP 13 + Studio 5 = +18 件 (yt-dlp / git-filter-repo / ollama / cocoapods / fastlane / xcodes / exiftool / mpg123 / cloudflared / ddrescue / pipx / poppler / ghostscript / rclone / supabase / llama.cpp / tmux / fileicon)。syncthing / fswatch / fwupd は方針整合のため除外 (両機 brew uninstall 済)
-- `npm-global-packages.txt` — +defuddle-cli / wrangler / @modelcontextprotocol/server-puppeteer / @musistudio/claude-code-router / @qwen-code/qwen-code / @tobilu/qmd
-- `vscode-extensions-mbp.txt` (50 個) + `vscode-extensions-studio.txt` (12 個 = MBP の subset) を新規作成。canonical `vscode-extensions.txt` への union merge は次回
+## TODO / FIXME (sampled)
 
-削除:
-- `claude/commands/sync.md` / `claude/commands/sync-main.md` — claude-config 側の `/sync` `/sync-main` 廃止に追従、新規マシン bootstrap で再導入されないよう mirror も消去
-
-## TODO / FIXME
-
-(none in repo)
-
-## Memory pointer
-
-両機運用方針は claude-config memory:
-- `multi-machine-agents.md` — git push/pull のみ、自動同期全廃
-- `feedback_dev_env_drift_2026-05-10.md` — install と宣言ファイル更新を同 commit ルール
-- `feedback_machine_switch_ritual.md` — 作業前 git fetch + status + ahead/behind ritual
+    tools/.venv/lib/python3.14/site-packages/pip/_internal/network/lazy_wheel.py:179:        # TODO: Get range requests to be correctly cached
+    tools/.venv/lib/python3.14/site-packages/pip/_internal/cache.py:280:                # TODO: use DirectUrl.equivalent when
+    tools/.venv/lib/python3.14/site-packages/pip/_internal/utils/unpacking.py:353:        # FIXME: handle?
+    tools/.venv/lib/python3.14/site-packages/pip/_internal/utils/unpacking.py:354:        # FIXME: magic signatures?
+    tools/.venv/lib/python3.14/site-packages/pip/_internal/models/selection_prefs.py:6:# TODO: This needs Python 3.10's improved slots support for dataclasses
+    tools/.venv/lib/python3.14/site-packages/pip/_internal/models/installation_report.py:51:            # TODO: currently, the resolver uses the default environment to evaluate
+    tools/.venv/lib/python3.14/site-packages/pip/_internal/cli/base_command.py:209:        # TODO: Try to get these passing down from the command?
+    tools/.venv/lib/python3.14/site-packages/pip/_internal/operations/prepare.py:568:        # TODO: separate this part out from RequirementPreparer when the v1
+    tools/.venv/lib/python3.14/site-packages/pip/_internal/operations/prepare.py:642:            # FIXME: https://github.com/pypa/pip/issues/11943
+    tools/.venv/lib/python3.14/site-packages/pip/_internal/req/req_install.py:350:        # FIXME: Is there a better place to create the build_dir? (hg and bzr
 
 <!-- /HOOK_GENERATED -->

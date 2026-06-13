@@ -1,6 +1,6 @@
 # mac-setup/tools/
 
-両機共通の小さな CLI ツール。bootstrap 後に `~/bin/` か launchd へ install して常駐させる。
+マシン非依存の小さな CLI ツール。bootstrap 後に `~/bin/` か launchd へ install して常駐させる。
 
 ## find-tool — `~/src/` 全文インデックス CLI
 
@@ -97,7 +97,7 @@ JSON を pipe して agent に渡せば、ヒットを再ランキング / sub-q
 |----|------|------|
 | 言語 | **Python 3 stdlib** | macOS 標準で動く。`rg` は Brewfile 未登録 + Claude Code shim と衝突する。bash + grep + jq の 100 行よりロジック保守がしやすい |
 | インデックス方式 | **scan-on-query** | キャッシュなし。対象ファイル < 500 で十分高速 (実測 < 1 秒) |
-| 設置場所 | `mac-setup/tools/` + `~/bin/` symlink | 両機同期 (git) + PATH 露出を分離 |
+| 設置場所 | `mac-setup/tools/` + `~/bin/` symlink | git でバックアップ + PATH 露出を分離 |
 
 ### テスト
 
