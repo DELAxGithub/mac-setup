@@ -11,6 +11,7 @@
 4. **ランタイムのセットアップ**: Node.js (v24) など (`mise` 使用)
 5. **Python環境**: 必要なライブラリの一括インストール (`requirements.txt`)
 6. **VS Code拡張機能**: 現在使用している拡張機能の復元
+7. **DELAX Agent Core**: Codex中心の共有ルール・5スキル・LM Studio Presetと、安全な自動キャッチアップの導入
 
 ## 使い方 (Installation)
 
@@ -41,8 +42,10 @@
 - **requirements.txt**: Pythonパッケージのリスト。
 - **vscode-extensions.txt**: VS Code拡張機能のリスト。
 - **mise-config.toml**: 言語ランタイムのバージョン指定。
+- **tools/bootstrap-agent-core.sh**: `claude-config` を正本として導入し、Codex / Claude / LM Studio を接続する専用ブートストラップ。
 
 ## 注意点
 
 - **Google Drive / Dropbox**: アプリはインストールされますが、ログインと同期は手動で行う必要があります。
 - **VS Code Sync**: 設定同期機能を使っている場合、ログインすれば設定（Settings Sync）は自動で降ってきますが、拡張機能はこのスクリプトで明示的にインストールすることも可能です。
+- **Agent Core**: `setup.sh` は `~/src/claude-config` を導入し、ログイン時と6時間ごとの安全なキャッチアップを登録します。手元に未コミット変更がある場合は更新を止めるため、設定を強制的に上書きしません。

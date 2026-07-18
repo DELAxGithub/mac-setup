@@ -86,20 +86,9 @@ defaults write com.apple.dock persistent-others -array
 killall Dock
 echo "  -> Dock icons cleared"
 
-# 8. Setup Claude Code settings
-echo "[8/9] Setting up Claude Code..."
-CLAUDE_DIR="$HOME/.claude"
-mkdir -p "$CLAUDE_DIR/commands"
-if [ -d "$SCRIPT_DIR/claude/commands" ]; then
-    cp "$SCRIPT_DIR/claude/commands/"*.md "$CLAUDE_DIR/commands/" 2>/dev/null
-    echo "  -> Commands copied: $(ls "$SCRIPT_DIR/claude/commands/"*.md 2>/dev/null | wc -l | tr -d ' ') files"
-fi
-if [ -f "$SCRIPT_DIR/claude/settings.json" ] && [ ! -f "$CLAUDE_DIR/settings.json" ]; then
-    cp "$SCRIPT_DIR/claude/settings.json" "$CLAUDE_DIR/settings.json"
-    echo "  -> settings.json copied"
-else
-    echo "  -> settings.json already exists (skipped)"
-fi
+# 8. Setup shared Codex-first Agent Core
+echo "[8/9] Installing shared Codex / Claude / LM Studio Agent Core..."
+bash "$SCRIPT_DIR/tools/bootstrap-agent-core.sh"
 
 # 9. Setup multi-agent coordination files
 echo "[9/9] Setting up multi-agent coordination..."

@@ -43,7 +43,7 @@ brew "cloudflared"          # Cloudflare tunnel (tachi-tracker etc.)
 
 # Local LLM / analysis
 brew "llama.cpp"    # Local LLM runtime (claude-local fallback)
-brew "ollama"       # Primary local LLM stack (Mac Studio, gemma4 keep-alive 24h)
+brew "ollama"       # Optional local runtime / compatibility fallback
 brew "yt-dlp"       # YouTube downloader (playlist-analyzer skill dependency)
 
 # Git / VCS utilities
@@ -62,3 +62,4 @@ cask "dropbox"
 cask "box-drive"
 cask "logi-options+"
 cask "macfuse"
+cask "lm-studio"    # DELAX Agent Core local-Gemma client
